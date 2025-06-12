@@ -12,28 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { 
-  User, 
-  Settings, 
-  Bell, 
-  Shield, 
-  CircleHelp as HelpCircle, 
-  LogOut, 
-  ChevronRight, 
-  Mail, 
-  Phone, 
-  Edit3, 
-  DollarSign, 
-  Users, 
-  Receipt, 
-  Star,
-  Camera,
-  Moon,
-  Globe,
-  CreditCard,
-  Download,
-  Share2
-} from 'lucide-react-native';
+import { User, Settings, Bell, Shield, CircleHelp as HelpCircle, LogOut, ChevronRight, Mail, Phone, CreditCard as Edit3, DollarSign, Users, Receipt, Star, Camera, Moon, Globe, CreditCard, Download, Share2 } from 'lucide-react-native';
 import { apiService } from '@/services/api';
 import { User as UserType } from '@/types';
 
