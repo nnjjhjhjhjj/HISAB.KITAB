@@ -32,10 +32,12 @@ app.use((req, res, next) => {
   next();
 });
 
-// Routes: **IMPORTANT** - mounted at '/users' for simpler URL structure
-app.use('/users', userRoutes);  // <-- This makes your routes like /users/register, /users/login
-app.use('/api/groups', groupRoutes);
-app.use('/api/expenses', expenseRoutes);
+// Routes: **IMPORTANT** - Fixed route mounting
+app.use('/users', userRoutes);  // User routes: /users/register, /users/login
+app.use('/api/groups', groupRoutes);  // Group routes: /api/groups/
+app.use('/groups', groupRoutes);  // Also mount at /groups for compatibility
+app.use('/api/expenses', expenseRoutes);  // Expense routes: /api/expenses/
+app.use('/expenses', expenseRoutes);  // Also mount at /expenses for compatibility
 app.use('/api/auth', authRoutes);
 
 // Health check route
