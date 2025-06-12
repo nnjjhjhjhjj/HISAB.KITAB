@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,25 +8,73 @@ import {
   Image,
   Switch,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { User, Settings, Bell, Shield, CircleHelp as HelpCircle, LogOut, ChevronRight, Mail, Phone, CreditCard as Edit3, DollarSign, Users, Receipt, Star } from 'lucide-react-native';
+import { 
+  User, 
+  Settings, 
+  Bell, 
+  Shield, 
+  CircleHelp as HelpCircle, 
+  LogOut, 
+  ChevronRight, 
+  Mail, 
+  Phone, 
+  Edit3, 
+  DollarSign, 
+  Users, 
+  Receipt, 
+  Star,
+  Camera,
+  Moon,
+  Globe,
+  CreditCard,
+  Download,
+  Share2
+} from 'lucide-react-native';
+import { apiService } from '@/services/api';
+import { User as UserType } from '@/types';
 
 export default function ProfileScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
+  const [user, setUser] = useState<UserType | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalGroups: 0,
+    totalExpenses: 0,
+    totalTransactions: 0,
+  });
 
-  // Mock user data
-  const userData = {
-    name: 'Alex Johnson',
-    email: 'alex.johnson@email.com',
-    phone: '+1 (555) 123-4567',
-    avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=400',
-    joinDate: 'January 2024',
-    totalGroups: 5,
-    totalExpenses: 1250.50,
-    totalTransactions: 23,
+  useEffect(() => {
+    fetchUserData();
+  }, []);
+
+  const fetchUserData = async () => {
+    try {
+      setLoading(true);
+      const [userProfile, groups, expenses] = await Promise.all([
+        apiService.getUserProfile(),
+        apiService.getGroups(),
+        apiService.getAllExpenses(),
+      ]);
+
+      setUser(userProfile);
+      
+      const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+      setStats({
+        totalGroups: groups.length,
+        totalExpenses: totalExpenses,
+        totalTransactions: expenses.length,
+      });
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      Alert.alert('Error', 'Failed to load profile data');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLogout = () => {
@@ -39,12 +87,48 @@ export default function ProfileScreen() {
           text: 'Logout', 
           style: 'destructive',
           onPress: () => {
-            // Handle logout logic here
-            console.log('User logged out');
+            apiService.clearAuthToken();
+            router.replace('/(auth)/login');
           }
         },
       ]
     );
+  };
+
+  const handleEditProfile = () => {
+    router.push('/profile/edit');
+  };
+
+  const handleChangePassword = () => {
+    router.push('/profile/change-password');
+  };
+
+  const handleNotificationSettings = () => {
+    router.push('/profile/notifications');
+  };
+
+  const handlePrivacySettings = () => {
+    router.push('/profile/privacy');
+  };
+
+  const handleAppSettings = () => {
+    router.push('/profile/settings');
+  };
+
+  const handleHelp = () => {
+    router.push('/profile/help');
+  };
+
+  const handleAbout = () => {
+    router.push('/profile/about');
+  };
+
+  const handleExportData = () => {
+    Alert.alert('Export Data', 'This feature will export all your data to a CSV file.');
+  };
+
+  const handleShareApp = () => {
+    Alert.alert('Share App', 'Share SplitWise with your friends!');
   };
 
   const renderSettingItem = (
@@ -53,21 +137,22 @@ export default function ProfileScreen() {
     subtitle?: string,
     onPress?: () => void,
     rightElement?: React.ReactNode,
-    showChevron: boolean = true
+    showChevron: boolean = true,
+    danger: boolean = false
   ) => (
     <TouchableOpacity
       style={styles.settingItem}
       onPress={onPress}
       disabled={!onPress}
     >
-      <View style={styles.settingIcon}>
+      <View style={[styles.settingIcon, danger && styles.dangerIcon]}>
         {icon}
       </View>
       <View style={styles.settingContent}>
-        <Text style={styles.settingTitle}>{title}</Text>
+        <Text style={[styles.settingTitle, danger && styles.dangerText]}>{title}</Text>
         {subtitle && <Text style={styles.settingSubtitle}>{subtitle}</Text>}
       </View>
-      {rightElement || (showChevron && (
+      {rightElement || (showChevron && onPress && (
         <ChevronRight size={20} color="#9ca3af" />
       ))}
     </TouchableOpacity>
@@ -83,24 +168,43 @@ export default function ProfileScreen() {
     </View>
   );
 
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#2563eb" />
+          <Text style={styles.loadingText}>Loading profile...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Profile</Text>
-          <TouchableOpacity style={styles.editButton}>
+          <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
             <Edit3 size={20} color="#2563eb" />
           </TouchableOpacity>
         </View>
 
         {/* Profile Card */}
         <View style={styles.profileCard}>
-          <Image source={{ uri: userData.avatar }} style={styles.avatar} />
+          <View style={styles.avatarContainer}>
+            <Image 
+              source={{ uri: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=400' }} 
+              style={styles.avatar} 
+            />
+            <TouchableOpacity style={styles.cameraButton}>
+              <Camera size={16} color="#ffffff" />
+            </TouchableOpacity>
+          </View>
           <View style={styles.profileInfo}>
-            <Text style={styles.userName}>{userData.name}</Text>
-            <Text style={styles.userEmail}>{userData.email}</Text>
-            <Text style={styles.joinDate}>Member since {userData.joinDate}</Text>
+            <Text style={styles.userName}>{user?.name || 'User Name'}</Text>
+            <Text style={styles.userEmail}>{user?.email || 'user@example.com'}</Text>
+            <Text style={styles.joinDate}>Member since January 2024</Text>
           </View>
         </View>
 
@@ -111,17 +215,17 @@ export default function ProfileScreen() {
             {renderStatsCard(
               <Users size={20} color="#2563eb" />,
               'Groups',
-              userData.totalGroups
+              stats.totalGroups
             )}
             {renderStatsCard(
               <DollarSign size={20} color="#059669" />,
               'Total Expenses',
-              `$${userData.totalExpenses.toFixed(2)}`
+              `$${stats.totalExpenses.toFixed(2)}`
             )}
             {renderStatsCard(
               <Receipt size={20} color="#ea580c" />,
               'Transactions',
-              userData.totalTransactions
+              stats.totalTransactions
             )}
           </View>
         </View>
@@ -131,22 +235,28 @@ export default function ProfileScreen() {
           <Text style={styles.sectionTitle}>Account</Text>
           <View style={styles.settingsGroup}>
             {renderSettingItem(
-              <Mail size={20} color="#6b7280" />,
-              'Email',
-              userData.email,
-              () => console.log('Edit email')
+              <User size={20} color="#6b7280" />,
+              'Edit Profile',
+              'Update your personal information',
+              handleEditProfile
             )}
             {renderSettingItem(
-              <Phone size={20} color="#6b7280" />,
-              'Phone',
-              userData.phone,
-              () => console.log('Edit phone')
+              <Mail size={20} color="#6b7280" />,
+              'Email',
+              user?.email || 'user@example.com',
+              handleEditProfile
             )}
             {renderSettingItem(
               <Shield size={20} color="#6b7280" />,
-              'Privacy & Security',
-              'Manage your account security',
-              () => console.log('Privacy settings')
+              'Change Password',
+              'Update your account password',
+              handleChangePassword
+            )}
+            {renderSettingItem(
+              <CreditCard size={20} color="#6b7280" />,
+              'Payment Methods',
+              'Manage your payment options',
+              () => router.push('/profile/payment-methods')
             )}
           </View>
         </View>
@@ -159,7 +269,7 @@ export default function ProfileScreen() {
               <Bell size={20} color="#6b7280" />,
               'Notifications',
               'Push notifications for expenses',
-              undefined,
+              handleNotificationSettings,
               <Switch
                 value={notificationsEnabled}
                 onValueChange={setNotificationsEnabled}
@@ -169,10 +279,48 @@ export default function ProfileScreen() {
               false
             )}
             {renderSettingItem(
+              <Moon size={20} color="#6b7280" />,
+              'Dark Mode',
+              'Switch to dark theme',
+              undefined,
+              <Switch
+                value={darkModeEnabled}
+                onValueChange={setDarkModeEnabled}
+                trackColor={{ false: '#f3f4f6', true: '#bfdbfe' }}
+                thumbColor={darkModeEnabled ? '#2563eb' : '#9ca3af'}
+              />,
+              false
+            )}
+            {renderSettingItem(
+              <Globe size={20} color="#6b7280" />,
+              'Language & Region',
+              'English (US)',
+              handleAppSettings
+            )}
+            {renderSettingItem(
               <Settings size={20} color="#6b7280" />,
               'App Settings',
-              'Language, currency, and more',
-              () => console.log('App settings')
+              'Currency, date format, and more',
+              handleAppSettings
+            )}
+          </View>
+        </View>
+
+        {/* Privacy & Security */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Privacy & Security</Text>
+          <View style={styles.settingsGroup}>
+            {renderSettingItem(
+              <Shield size={20} color="#6b7280" />,
+              'Privacy Settings',
+              'Control your data and privacy',
+              handlePrivacySettings
+            )}
+            {renderSettingItem(
+              <Download size={20} color="#6b7280" />,
+              'Export Data',
+              'Download your data',
+              handleExportData
             )}
           </View>
         </View>
@@ -185,13 +333,32 @@ export default function ProfileScreen() {
               <HelpCircle size={20} color="#6b7280" />,
               'Help & Support',
               'Get help with the app',
-              () => console.log('Help')
+              handleHelp
             )}
             {renderSettingItem(
               <Star size={20} color="#6b7280" />,
               'Rate the App',
               'Share your feedback',
-              () => console.log('Rate app')
+              () => Alert.alert('Rate App', 'Thank you for your feedback!')
+            )}
+            {renderSettingItem(
+              <Share2 size={20} color="#6b7280" />,
+              'Share App',
+              'Invite friends to SplitWise',
+              handleShareApp
+            )}
+          </View>
+        </View>
+
+        {/* About Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>About</Text>
+          <View style={styles.settingsGroup}>
+            {renderSettingItem(
+              <Settings size={20} color="#6b7280" />,
+              'About SplitWise',
+              'Version 1.0.0',
+              handleAbout
             )}
           </View>
         </View>
@@ -202,17 +369,19 @@ export default function ProfileScreen() {
             {renderSettingItem(
               <LogOut size={20} color="#dc2626" />,
               'Logout',
-              undefined,
+              'Sign out of your account',
               handleLogout,
               undefined,
-              false
+              false,
+              true
             )}
           </View>
         </View>
 
         {/* App Version */}
         <View style={styles.versionContainer}>
-          <Text style={styles.versionText}>Version 1.0.0</Text>
+          <Text style={styles.versionText}>SplitWise v1.0.0</Text>
+          <Text style={styles.versionSubtext}>Made with ❤️ for expense sharing</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -226,6 +395,16 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#6b7280',
   },
   header: {
     flexDirection: 'row',
@@ -262,11 +441,27 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
+  avatarContainer: {
+    position: 'relative',
+    marginBottom: 16,
+  },
   avatar: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    marginBottom: 16,
+  },
+  cameraButton: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#2563eb',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#ffffff',
   },
   profileInfo: {
     alignItems: 'center',
@@ -362,6 +557,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
+  dangerIcon: {
+    backgroundColor: '#fef2f2',
+  },
   settingContent: {
     flex: 1,
   },
@@ -370,6 +568,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#111827',
     marginBottom: 2,
+  },
+  dangerText: {
+    color: '#dc2626',
   },
   settingSubtitle: {
     fontSize: 14,
@@ -383,5 +584,10 @@ const styles = StyleSheet.create({
   versionText: {
     fontSize: 14,
     color: '#9ca3af',
+    marginBottom: 4,
+  },
+  versionSubtext: {
+    fontSize: 12,
+    color: '#d1d5db',
   },
 });
