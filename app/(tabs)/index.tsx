@@ -11,17 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { 
-  Plus, 
-  TrendingUp, 
-  TrendingDown, 
-  DollarSign, 
-  Users, 
-  Calendar,
-  ArrowUpRight,
-  ArrowDownRight,
-  AlertCircle
-} from 'lucide-react-native';
+import { Plus, TrendingUp, TrendingDown, DollarSign, Users, Calendar, ArrowUpRight, ArrowDownRight, CircleAlert as AlertCircle } from 'lucide-react-native';
 import { Group, Expense } from '@/types';
 import { apiService } from '@/services/api';
 
