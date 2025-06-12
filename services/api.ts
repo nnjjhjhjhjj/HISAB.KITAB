@@ -4,74 +4,6 @@ import { Group, Expense, User, ApiResponse } from '@/types';
 // API Configuration - Updated to match the backend port
 const API_BASE_URL  = 'http://192.168.1.85:5051';
 
-const USE_MOCK_DATA = false; 
-
-// Mock data for development (keeping existing mock data for fallback)
-const mockGroups: Group[] = [
-  {
-    id: '1',
-    name: 'Trip to Bali',
-    description: 'Vacation expenses for our Bali trip',
-    members: ['Alice', 'Bob', 'Charlie'],
-    totalExpenses: 1250.50,
-    balances: { 'Alice': -150.25, 'Bob': 75.50, 'Charlie': 74.75 },
-    createdAt: '2024-01-15T10:00:00Z'
-  },
-  {
-    id: '2',
-    name: 'Roommate Expenses',
-    description: 'Shared apartment costs',
-    members: ['David', 'Emma', 'Frank'],
-    totalExpenses: 2350.00,
-    balances: { 'David': 100.00, 'Emma': -200.00, 'Frank': 100.00 },
-    createdAt: '2024-01-10T08:30:00Z'
-  },
-  {
-    id: '3',
-    name: 'Office Lunch',
-    description: 'Team lunch expenses',
-    members: ['Grace', 'Henry', 'Ivy', 'Jack'],
-    totalExpenses: 185.75,
-    balances: { 'Grace': -25.50, 'Henry': 15.25, 'Ivy': 5.25, 'Jack': 5.00 },
-    createdAt: '2024-01-20T12:15:00Z'
-  }
-];
-
-const mockExpenses: { [groupId: string]: Expense[] } = {
-  '1': [
-    {
-      id: '1',
-      groupId: '1',
-      description: 'Hotel booking',
-      amount: 600.00,
-      paidBy: 'Alice',
-      participants: ['Alice', 'Bob', 'Charlie'],
-      date: '2024-01-15',
-      createdAt: '2024-01-15T10:00:00Z'
-    },
-    {
-      id: '2',
-      groupId: '1',
-      description: 'Flight tickets',
-      amount: 450.50,
-      paidBy: 'Bob',
-      participants: ['Alice', 'Bob', 'Charlie'],
-      date: '2024-01-16',
-      createdAt: '2024-01-16T14:30:00Z'
-    },
-    {
-      id: '3',
-      groupId: '1',
-      description: 'Dinner at restaurant',
-      amount: 200.00,
-      paidBy: 'Charlie',
-      participants: ['Alice', 'Bob', 'Charlie'],
-      date: '2024-01-17',
-      createdAt: '2024-01-17T19:45:00Z'
-    }
-  ]
-};
-
 // Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -123,21 +55,6 @@ api.interceptors.response.use(
 export const apiService = {
   // Authentication
   async login(email: string, password: string): Promise<{ token: string; user: User }> {
-    if (USE_MOCK_DATA) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const mockUser = {
-            id: '1',
-            name: 'Demo User',
-            email: email,
-          };
-          const mockToken = 'mock_jwt_token_' + Date.now();
-          authToken = mockToken;
-          resolve({ token: mockToken, user: mockUser });
-        }, 1000);
-      });
-    }
-
     try {
       console.log('Attempting login with:', { email });
       const response = await api.post('/users/login', { email, password });
@@ -156,21 +73,6 @@ export const apiService = {
   },
 
   async register(name: string, email: string, password: string): Promise<{ token: string; user: User }> {
-    if (USE_MOCK_DATA) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const mockUser = {
-            id: Date.now().toString(),
-            name: name,
-            email: email,
-          };
-          const mockToken = 'mock_jwt_token_' + Date.now();
-          authToken = mockToken;
-          resolve({ token: mockToken, user: mockUser });
-        }, 1000);
-      });
-    }
-
     try {
       console.log('Attempting registration with:', { name, email });
       const response = await api.post('/users/register', { name, email, password });
@@ -188,6 +90,20 @@ export const apiService = {
     }
   },
 
+  // Get user profile
+  async getUserProfile(): Promise<User> {
+    try {
+      console.log('Fetching user profile...');
+      const response = await api.get('/users/profile');
+      console.log('Profile response:', response.data);
+      
+      return response.data.user;
+    } catch (error) {
+      console.error('Get profile API call failed:', error);
+      throw error;
+    }
+  },
+
   // Set auth token (for when user logs in)
   setAuthToken(token: string) {
     authToken = token;
@@ -200,14 +116,13 @@ export const apiService = {
     console.log('Auth token cleared');
   },
 
+  // Check if user is authenticated
+  isAuthenticated(): boolean {
+    return !!authToken;
+  },
+
   // Groups
   async getGroups(): Promise<Group[]> {
-    if (USE_MOCK_DATA) {
-      return new Promise((resolve) => {
-        setTimeout(() => resolve(mockGroups), 800);
-      });
-    }
-
     try {
       console.log('Fetching groups...');
       const response = await api.get('/api/groups');
@@ -221,15 +136,6 @@ export const apiService = {
   },
 
   async getGroup(id: string): Promise<Group | null> {
-    if (USE_MOCK_DATA) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const group = mockGroups.find(g => g.id === id);
-          resolve(group || null);
-        }, 600);
-      });
-    }
-
     try {
       console.log('Fetching group:', id);
       const response = await api.get(`/api/groups/${id}`);
@@ -243,22 +149,6 @@ export const apiService = {
   },
 
   async createGroup(group: Omit<Group, 'id' | 'createdAt' | 'totalExpenses' | 'balances'>): Promise<Group> {
-    if (USE_MOCK_DATA) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const newGroup: Group = {
-            ...group,
-            id: Date.now().toString(),
-            totalExpenses: 0,
-            balances: {},
-            createdAt: new Date().toISOString(),
-          };
-          mockGroups.unshift(newGroup);
-          resolve(newGroup);
-        }, 500);
-      });
-    }
-
     try {
       console.log('Creating group:', group);
       const response = await api.post('/api/groups', group);
@@ -276,15 +166,6 @@ export const apiService = {
 
   // Expenses
   async getGroupExpenses(groupId: string): Promise<Expense[]> {
-    if (USE_MOCK_DATA) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const expenses = mockExpenses[groupId] || [];
-          resolve(expenses);
-        }, 600);
-      });
-    }
-
     try {
       console.log('Fetching expenses for group:', groupId);
       const response = await api.get(`/api/expenses/group/${groupId}`);
@@ -297,26 +178,20 @@ export const apiService = {
     }
   },
 
-  async createExpense(expense: Omit<Expense, 'id' | 'createdAt'>): Promise<Expense> {
-    if (USE_MOCK_DATA) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const newExpense: Expense = {
-            ...expense,
-            id: Date.now().toString(),
-            createdAt: new Date().toISOString(),
-          };
-          
-          if (!mockExpenses[expense.groupId]) {
-            mockExpenses[expense.groupId] = [];
-          }
-          mockExpenses[expense.groupId].unshift(newExpense);
-          
-          resolve(newExpense);
-        }, 500);
-      });
+  async getAllExpenses(): Promise<Expense[]> {
+    try {
+      console.log('Fetching all expenses...');
+      const response = await api.get('/api/expenses');
+      console.log('All expenses response:', response.data);
+      
+      return response.data.data || response.data;
+    } catch (error) {
+      console.error('Get all expenses API call failed:', error);
+      throw error;
     }
+  },
 
+  async createExpense(expense: Omit<Expense, 'id' | 'createdAt'>): Promise<Expense> {
     try {
       console.log('Creating expense:', expense);
       const response = await api.post('/api/expenses', expense);

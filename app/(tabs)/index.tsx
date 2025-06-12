@@ -6,20 +6,12 @@ import {
   TouchableOpacity,
   StyleSheet,
   RefreshControl,
-  Image,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { 
-  Plus, 
-  TrendingUp, 
-  TrendingDown, 
-  DollarSign, 
-  Users, 
-  Calendar,
-  ArrowUpRight,
-  ArrowDownRight
-} from 'lucide-react-native';
+import { Plus, TrendingUp, TrendingDown, DollarSign, Users, Calendar, ArrowUpRight, ArrowDownRight, CircleAlert as AlertCircle } from 'lucide-react-native';
 import { Group, Expense } from '@/types';
 import { apiService } from '@/services/api';
 
@@ -28,17 +20,26 @@ export default function HomeScreen() {
   const [recentExpenses, setRecentExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchData = async () => {
     try {
+      setError(null);
+      console.log('Fetching dashboard data...');
+      
       const groupsData = await apiService.getGroups();
+      console.log('Groups fetched:', groupsData.length);
       setGroups(groupsData);
       
       // Get recent expenses from all groups
       const allExpenses: Expense[] = [];
-      for (const group of groupsData.slice(0, 3)) { // Limit to first 3 groups for performance
-        const expenses = await apiService.getGroupExpenses(group.id);
-        allExpenses.push(...expenses);
+      for (const group of groupsData.slice(0, 5)) { // Limit to first 5 groups for performance
+        try {
+          const expenses = await apiService.getGroupExpenses(group.id);
+          allExpenses.push(...expenses);
+        } catch (expenseError) {
+          console.warn(`Failed to fetch expenses for group ${group.id}:`, expenseError);
+        }
       }
       
       // Sort by date and take the 5 most recent
@@ -46,9 +47,11 @@ export default function HomeScreen() {
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .slice(0, 5);
       
+      console.log('Recent expenses fetched:', sortedExpenses.length);
       setRecentExpenses(sortedExpenses);
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('Error fetching dashboard data:', error);
+      setError('Failed to load dashboard data. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -87,11 +90,32 @@ export default function HomeScreen() {
     });
   };
 
+  const handleRetry = () => {
+    setLoading(true);
+    fetchData();
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#2563eb" />
           <Text style={styles.loadingText}>Loading your dashboard...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.errorContainer}>
+          <AlertCircle size={64} color="#dc2626" />
+          <Text style={styles.errorTitle}>Something went wrong</Text>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
+            <Text style={styles.retryButtonText}>Try Again</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -199,21 +223,25 @@ export default function HomeScreen() {
               {recentExpenses.map((expense) => {
                 const group = groups.find(g => g.id === expense.groupId);
                 return (
-                  <View key={expense.id} style={styles.activityItem}>
+                  <TouchableOpacity 
+                    key={expense.id} 
+                    style={styles.activityItem}
+                    onPress={() => router.push(`/group/${expense.groupId}`)}
+                  >
                     <View style={styles.activityIcon}>
                       <DollarSign size={16} color="#6b7280" />
                     </View>
                     <View style={styles.activityContent}>
                       <Text style={styles.activityTitle}>{expense.description}</Text>
                       <Text style={styles.activitySubtitle}>
-                        {group?.name} • Paid by {expense.paidBy}
+                        {group?.name || 'Unknown Group'} • Paid by {expense.paidBy}
                       </Text>
                     </View>
                     <View style={styles.activityRight}>
                       <Text style={styles.activityAmount}>${expense.amount.toFixed(2)}</Text>
                       <Text style={styles.activityDate}>{formatDate(expense.createdAt)}</Text>
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 );
               })}
             </View>
@@ -222,6 +250,13 @@ export default function HomeScreen() {
               <Calendar size={48} color="#d1d5db" />
               <Text style={styles.emptyTitle}>No recent activity</Text>
               <Text style={styles.emptySubtitle}>Start adding expenses to see them here</Text>
+              <TouchableOpacity 
+                style={styles.addFirstButton}
+                onPress={() => router.push('/add-expense-quick')}
+              >
+                <Plus size={16} color="#2563eb" />
+                <Text style={styles.addFirstText}>Add First Expense</Text>
+              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -294,6 +329,38 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     color: '#6b7280',
+    marginTop: 12,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#dc2626',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 24,
+  },
+  retryButton: {
+    backgroundColor: '#2563eb',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   header: {
     flexDirection: 'row',
@@ -498,6 +565,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6b7280',
     textAlign: 'center',
+    marginBottom: 20,
+  },
+  addFirstButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#eff6ff',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+  },
+  addFirstText: {
+    marginLeft: 6,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2563eb',
   },
   groupsScroll: {
     marginHorizontal: -20,
