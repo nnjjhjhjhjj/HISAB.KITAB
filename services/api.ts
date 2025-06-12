@@ -210,13 +210,13 @@ export const apiService = {
 
     try {
       console.log('Fetching groups...');
-      const response = await api.get('/groups');
+      const response = await api.get('/api/groups');
       console.log('Groups response:', response.data);
       
       return response.data.data || response.data;
     } catch (error) {
-      console.warn('Groups API call failed, using mock data:', error);
-      return mockGroups;
+      console.error('Groups API call failed:', error);
+      throw error;
     }
   },
 
@@ -232,14 +232,13 @@ export const apiService = {
 
     try {
       console.log('Fetching group:', id);
-      const response = await api.get(`/groups/${id}`);
+      const response = await api.get(`/api/groups/${id}`);
       console.log('Group response:', response.data);
       
       return response.data.data || response.data;
     } catch (error) {
-      console.warn('Group API call failed, using mock data:', error);
-      const group = mockGroups.find(g => g.id === id);
-      return group || null;
+      console.error('Group API call failed:', error);
+      throw error;
     }
   },
 
@@ -262,7 +261,7 @@ export const apiService = {
 
     try {
       console.log('Creating group:', group);
-      const response = await api.post('/groups', group);
+      const response = await api.post('/api/groups', group);
       console.log('Create group response:', response.data);
       
       return response.data.data || response.data;
@@ -288,13 +287,13 @@ export const apiService = {
 
     try {
       console.log('Fetching expenses for group:', groupId);
-      const response = await api.get(`/expenses/group/${groupId}`);
+      const response = await api.get(`/api/expenses/group/${groupId}`);
       console.log('Expenses response:', response.data);
       
       return response.data.data || response.data;
     } catch (error) {
-      console.warn('Expenses API call failed, using mock data:', error);
-      return mockExpenses[groupId] || [];
+      console.error('Expenses API call failed:', error);
+      throw error;
     }
   },
 
@@ -320,7 +319,7 @@ export const apiService = {
 
     try {
       console.log('Creating expense:', expense);
-      const response = await api.post('/expenses', expense);
+      const response = await api.post('/api/expenses', expense);
       console.log('Create expense response:', response.data);
       
       return response.data.data || response.data;
