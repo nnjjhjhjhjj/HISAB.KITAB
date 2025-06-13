@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { v4: uuidv4 } = require('uuid');
 
 const groupSchema = new mongoose.Schema({
   name: { 
@@ -19,15 +20,20 @@ const groupSchema = new mongoose.Schema({
     required: true 
   },
   members: [{ 
-    type: String,
+    type: String,  // Consider using ObjectId if storing user IDs
     required: true,
     trim: true
-  }]
+  }],
+  inviteCode: {
+    type: String,
+    unique: true,
+    required: true,
+    default: () => uuidv4().slice(0, 8) // Generates short unique code
+  }
 }, { 
   timestamps: true 
 });
 
-// Index for better query performance
 groupSchema.index({ createdBy: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Group', groupSchema);

@@ -29,28 +29,36 @@ export default function HelpScreen() {
 
   const faqs = [
     {
-      question: 'How do I create a new group?',
-      answer: 'Tap the "+" button on the Groups tab or use the "New Group" quick action on the home screen. Enter a group name, description, and add members.'
+      question: 'How do I create a new group in Hisab Kitab?',
+      answer: 'Tap the "+" button on the Groups tab or use the "New Group" quick action on the home screen. Enter a group name, description, and add members to start tracking shared expenses.'
     },
     {
-      question: 'How are expenses split?',
-      answer: 'By default, expenses are split equally among all participants. You can select which group members participated in each expense when adding it.'
+      question: 'How are expenses split in Hisab Kitab?',
+      answer: 'By default, expenses are split equally among all participants. You can select which group members participated in each expense when adding it. The app automatically calculates each person\'s share.'
     },
     {
       question: 'How do I settle up with someone?',
-      answer: 'Go to the group where you owe money, check the balances section, and use external payment methods to settle. Then mark it as settled in the app.'
+      answer: 'Go to the group where you owe money, check the balances section. You can use eSewa or other payment methods to settle. Then mark it as settled in the app.'
     },
     {
       question: 'Can I edit or delete expenses?',
-      answer: 'Currently, expenses cannot be edited or deleted once created. This feature will be available in a future update.'
+      answer: 'Currently, expenses cannot be edited or deleted once created. This feature will be available in a future update to maintain transaction integrity.'
+    },
+    {
+      question: 'How do I export my transaction data?',
+      answer: 'Go to your Profile > Export Data to download all your transactions as a CSV file. This includes all expenses, payments, and group details.'
+    },
+    {
+      question: 'What payment methods are supported?',
+      answer: 'Hisab Kitab supports eSewa for digital payments in Nepal, along with cash settlements. More payment methods will be added in future updates.'
     },
     {
       question: 'How do I leave a group?',
-      answer: 'You can leave a group by going to the group settings. Make sure all balances are settled before leaving.'
+      answer: 'You can leave a group by going to the group settings. Make sure all balances are settled before leaving to avoid confusion.'
     },
     {
-      question: 'Is my data secure?',
-      answer: 'Yes, we use industry-standard encryption to protect your data. Your financial information is never stored on our servers.'
+      question: 'Is my data secure in Hisab Kitab?',
+      answer: 'Yes, we use industry-standard encryption to protect your data. Your financial information is securely stored and never shared with third parties.'
     }
   ];
 
@@ -60,22 +68,22 @@ export default function HelpScreen() {
       'Choose how you\'d like to contact us:',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Email', onPress: () => Linking.openURL('mailto:support@splitwise.com') },
-        { text: 'Phone', onPress: () => Linking.openURL('tel:+1234567890') },
+        { text: 'Email', onPress: () => Linking.openURL('mailto:support@hisabkitab.com') },
+        { text: 'Phone', onPress: () => Linking.openURL('tel:+9779800000000') },
       ]
     );
   };
 
   const handleOpenWebsite = () => {
-    Linking.openURL('https://splitwise.com/help');
+    Linking.openURL('https://hisabkitab.com/help');
   };
 
   const handleCommunity = () => {
-    Alert.alert('Community', 'Join our community forum to connect with other users and get help.');
+    Alert.alert('Community', 'Join our community forum to connect with other Hisab Kitab users and get help.');
   };
 
   const handleReportBug = () => {
-    Alert.alert('Report Bug', 'Thank you for helping us improve! Please describe the issue you encountered.');
+    Alert.alert('Report Bug', 'Thank you for helping us improve Hisab Kitab! Please describe the issue you encountered.');
   };
 
   const renderHelpItem = (
@@ -146,27 +154,27 @@ export default function HelpScreen() {
             {renderHelpItem(
               <MessageCircle size={20} color="#6b7280" />,
               'Contact Support',
-              'Get help from our support team',
+              'Get help from our Hisab Kitab support team',
               handleContactSupport
             )}
             {renderHelpItem(
               <Book size={20} color="#6b7280" />,
               'User Guide',
-              'Learn how to use SplitWise',
+              'Learn how to use Hisab Kitab effectively',
               handleOpenWebsite,
               true
             )}
             {renderHelpItem(
               <Video size={20} color="#6b7280" />,
               'Video Tutorials',
-              'Watch step-by-step guides',
+              'Watch step-by-step guides in Nepali',
               handleOpenWebsite,
               true
             )}
             {renderHelpItem(
               <Users size={20} color="#6b7280" />,
               'Community Forum',
-              'Connect with other users',
+              'Connect with other Hisab Kitab users',
               handleCommunity,
               true
             )}
@@ -189,18 +197,18 @@ export default function HelpScreen() {
               <Mail size={20} color="#2563eb" />
               <View style={styles.contactContent}>
                 <Text style={styles.contactLabel}>Email Support</Text>
-                <Text style={styles.contactValue}>support@splitwise.com</Text>
+                <Text style={styles.contactValue}>support@hisabkitab.com</Text>
               </View>
             </View>
             <View style={styles.contactItem}>
               <Phone size={20} color="#2563eb" />
               <View style={styles.contactContent}>
                 <Text style={styles.contactLabel}>Phone Support</Text>
-                <Text style={styles.contactValue}>+1 (555) 123-4567</Text>
+                <Text style={styles.contactValue}>+977 98-00000000</Text>
               </View>
             </View>
             <Text style={styles.contactHours}>
-              Support hours: Monday - Friday, 9 AM - 6 PM EST
+              Support hours: Sunday - Friday, 10 AM - 6 PM NST
             </Text>
           </View>
         </View>
@@ -212,7 +220,7 @@ export default function HelpScreen() {
             {renderHelpItem(
               <Bug size={20} color="#6b7280" />,
               'Report a Bug',
-              'Help us improve the app',
+              'Help us improve Hisab Kitab',
               handleReportBug
             )}
           </View>
@@ -222,9 +230,10 @@ export default function HelpScreen() {
         <View style={styles.infoCard}>
           <Text style={styles.infoTitle}>App Information</Text>
           <Text style={styles.infoText}>
-            SplitWise v1.0.0{'\n'}
+            Hisab Kitab v1.0.0{'\n'}
             Last updated: January 2024{'\n'}
-            Platform: React Native
+            Platform: React Native{'\n'}
+            Made in Nepal 🇳🇵
           </Text>
         </View>
       </ScrollView>
