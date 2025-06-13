@@ -11,9 +11,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { ArrowLeft, DollarSign, Check, X, Users } from 'lucide-react-native';
+import { ArrowLeft, DollarSign, Check, X, Users, Play } from 'lucide-react-native';
 import { Group } from '@/types';
 import { apiService } from '@/services/api';
+import { limitService } from '@/services/limitService';
+import AdModal from '@/components/AdModal';
 
 export default function AddExpenseQuickScreen() {
   const [groups, setGroups] = useState<Group[]>([]);
@@ -25,6 +27,9 @@ export default function AddExpenseQuickScreen() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [showAdModal, setShowAdModal] = useState(false);
+  const [canAddExpense, setCanAddExpense] = useState(true);
+  const [remainingTransactions, setRemainingTransactions] = useState(0);
 
   useEffect(() => {
     const fetchGroups = async () => {
@@ -49,7 +54,14 @@ export default function AddExpenseQuickScreen() {
       }
     };
 
+    const checkLimits = async () => {
+      const { canAdd, remaining } = await limitService.canAddTransaction();
+      setCanAddExpense(canAdd);
+      setRemainingTransactions(remaining);
+    };
+
     fetchGroups();
+    checkLimits();
   }, []);
 
   const selectGroup = (group: Group) => {
@@ -75,6 +87,23 @@ export default function AddExpenseQuickScreen() {
   };
 
   const handleSubmit = async () => {
+    // Check limits first
+    const { canAdd, needsAd } = await limitService.canAddTransaction();
+    
+    if (!canAdd) {
+      if (needsAd) {
+        setShowAdModal(true);
+        return;
+      } else {
+        Alert.alert(
+          'Daily Limit Reached',
+          'You\'ve reached your daily transaction limit. Try again tomorrow or watch ads for more transactions.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+    }
+
     // Validation
     if (!selectedGroup) {
       Alert.alert('Error', 'Please select a group');
@@ -113,6 +142,9 @@ export default function AddExpenseQuickScreen() {
         date,
       });
 
+      // Increment transaction count
+      await limitService.incrementTransactions();
+
       Alert.alert('Success', 'Expense added successfully!', [
         {
           text: 'OK',
@@ -125,6 +157,13 @@ export default function AddExpenseQuickScreen() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleAdWatched = async () => {
+    await limitService.addTransactionBonus();
+    const { canAdd, remaining } = await limitService.canAddTransaction();
+    setCanAddExpense(canAdd);
+    setRemainingTransactions(remaining);
   };
 
   if (loading) {
@@ -187,9 +226,27 @@ export default function AddExpenseQuickScreen() {
         </TouchableOpacity>
         <View style={styles.headerContent}>
           <Text style={styles.title}>Add Expense</Text>
-          <Text style={styles.subtitle}>Quick expense entry</Text>
+          <Text style={styles.subtitle}>
+            {remainingTransactions} transactions remaining today
+          </Text>
         </View>
       </View>
+
+      {/* Limit Warning */}
+      {!canAddExpense && (
+        <View style={styles.limitWarning}>
+          <Text style={styles.limitWarningText}>
+            Daily limit reached! Watch an ad to get 5 more transactions.
+          </Text>
+          <TouchableOpacity 
+            style={styles.watchAdButton}
+            onPress={() => setShowAdModal(true)}
+          >
+            <Play size={16} color="#ffffff" />
+            <Text style={styles.watchAdText}>Watch Ad</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
         {/* Group Selection */}
@@ -328,20 +385,32 @@ export default function AddExpenseQuickScreen() {
 
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
+          style={[
+            styles.submitButton, 
+            (submitting || !canAddExpense) && styles.submitButtonDisabled
+          ]}
           onPress={handleSubmit}
-          disabled={submitting}
+          disabled={submitting || !canAddExpense}
         >
           {submitting ? (
-            <ActivityIndicator color="#ffffff\" size="small" />
+            <ActivityIndicator color="#ffffff" size="small" />
           ) : (
             <>
               <DollarSign size={20} color="#ffffff" />
-              <Text style={styles.submitButtonText}>Add Expense</Text>
+              <Text style={styles.submitButtonText}>
+                {canAddExpense ? 'Add Expense' : 'Watch Ad to Continue'}
+              </Text>
             </>
           )}
         </TouchableOpacity>
       </View>
+
+      <AdModal
+        visible={showAdModal}
+        onClose={() => setShowAdModal(false)}
+        onAdWatched={handleAdWatched}
+        adType="transaction"
+      />
     </SafeAreaView>
   );
 }
@@ -376,6 +445,35 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6b7280',
     marginTop: 2,
+  },
+  limitWarning: {
+    backgroundColor: '#fef3c7',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#fbbf24',
+  },
+  limitWarningText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#92400e',
+    fontWeight: '500',
+  },
+  watchAdButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2563eb',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  watchAdText: {
+    marginLeft: 4,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#ffffff',
   },
   loadingContainer: {
     flex: 1,

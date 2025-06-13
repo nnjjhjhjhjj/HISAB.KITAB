@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,14 +11,29 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Plus, X, Users, ArrowLeft } from 'lucide-react-native';
+import { Plus, X, Users, ArrowLeft, Play } from 'lucide-react-native';
 import { apiService } from '@/services/api';
+import { limitService } from '@/services/limitService';
+import AdModal from '@/components/AdModal';
 
 export default function AddGroupScreen() {
   const [groupName, setGroupName] = useState('');
   const [description, setDescription] = useState('');
   const [members, setMembers] = useState<string[]>(['']);
   const [loading, setLoading] = useState(false);
+  const [showAdModal, setShowAdModal] = useState(false);
+  const [canCreateGroup, setCanCreateGroup] = useState(true);
+  const [remainingGroups, setRemainingGroups] = useState(0);
+
+  useEffect(() => {
+    const checkLimits = async () => {
+      const { canAdd, remaining } = await limitService.canCreateGroup();
+      setCanCreateGroup(canAdd);
+      setRemainingGroups(remaining);
+    };
+
+    checkLimits();
+  }, []);
 
   const addMember = () => {
     setMembers([...members, '']);
@@ -38,6 +53,23 @@ export default function AddGroupScreen() {
   };
 
   const handleCreateGroup = async () => {
+    // Check limits first
+    const { canAdd, needsAd } = await limitService.canCreateGroup();
+    
+    if (!canAdd) {
+      if (needsAd) {
+        setShowAdModal(true);
+        return;
+      } else {
+        Alert.alert(
+          'Daily Limit Reached',
+          'You\'ve reached your daily group creation limit. Try again tomorrow or watch ads for more groups.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+    }
+
     // Validation
     if (!groupName.trim()) {
       Alert.alert('Error', 'Please enter a group name');
@@ -57,6 +89,9 @@ export default function AddGroupScreen() {
         description: description.trim(),
         members: validMembers,
       });
+
+      // Increment group count
+      await limitService.incrementGroups();
 
       Alert.alert('Success', 'Group created successfully!', [
         {
@@ -79,6 +114,13 @@ export default function AddGroupScreen() {
     }
   };
 
+  const handleAdWatched = async () => {
+    await limitService.addGroupBonus();
+    const { canAdd, remaining } = await limitService.canCreateGroup();
+    setCanCreateGroup(canAdd);
+    setRemainingGroups(remaining);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -90,9 +132,27 @@ export default function AddGroupScreen() {
         </TouchableOpacity>
         <View style={styles.headerContent}>
           <Text style={styles.title}>Create New Group</Text>
-          <Text style={styles.subtitle}>Set up a group to start splitting expenses</Text>
+          <Text style={styles.subtitle}>
+            {remainingGroups} groups remaining today
+          </Text>
         </View>
       </View>
+
+      {/* Limit Warning */}
+      {!canCreateGroup && (
+        <View style={styles.limitWarning}>
+          <Text style={styles.limitWarningText}>
+            Daily limit reached! Watch an ad to create 1 more group.
+          </Text>
+          <TouchableOpacity 
+            style={styles.watchAdButton}
+            onPress={() => setShowAdModal(true)}
+          >
+            <Play size={16} color="#ffffff" />
+            <Text style={styles.watchAdText}>Watch Ad</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
@@ -176,20 +236,32 @@ export default function AddGroupScreen() {
 
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[styles.createButton, loading && styles.createButtonDisabled]}
+          style={[
+            styles.createButton, 
+            (loading || !canCreateGroup) && styles.createButtonDisabled
+          ]}
           onPress={handleCreateGroup}
-          disabled={loading}
+          disabled={loading || !canCreateGroup}
         >
           {loading ? (
-            <ActivityIndicator color="#ffffff\" size="small" />
+            <ActivityIndicator color="#ffffff" size="small" />
           ) : (
             <>
               <Plus size={20} color="#ffffff" />
-              <Text style={styles.createButtonText}>Create Group</Text>
+              <Text style={styles.createButtonText}>
+                {canCreateGroup ? 'Create Group' : 'Watch Ad to Continue'}
+              </Text>
             </>
           )}
         </TouchableOpacity>
       </View>
+
+      <AdModal
+        visible={showAdModal}
+        onClose={() => setShowAdModal(false)}
+        onAdWatched={handleAdWatched}
+        adType="group"
+      />
     </SafeAreaView>
   );
 }
@@ -224,6 +296,35 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6b7280',
     marginTop: 2,
+  },
+  limitWarning: {
+    backgroundColor: '#fef3c7',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#fbbf24',
+  },
+  limitWarningText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#92400e',
+    fontWeight: '500',
+  },
+  watchAdButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2563eb',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  watchAdText: {
+    marginLeft: 4,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#ffffff',
   },
   form: {
     flex: 1,

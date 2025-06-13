@@ -11,9 +11,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Plus, TrendingUp, TrendingDown, DollarSign, Users, Calendar, ArrowUpRight, ArrowDownRight, CircleAlert as AlertCircle } from 'lucide-react-native';
+import { Plus, TrendingUp, TrendingDown, DollarSign, Users, Calendar, ArrowUpRight, ArrowDownRight, CircleAlert as AlertCircle, BarChart3 } from 'lucide-react-native';
 import { Group, Expense } from '@/types';
 import { apiService } from '@/services/api';
+import { limitService } from '@/services/limitService';
 
 export default function HomeScreen() {
   const [groups, setGroups] = useState<Group[]>([]);
@@ -21,6 +22,10 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [usageStats, setUsageStats] = useState({
+    transactions: { used: 0, total: 5 },
+    groups: { used: 0, total: 3 },
+  });
 
   const fetchData = async () => {
     try {
@@ -49,6 +54,10 @@ export default function HomeScreen() {
       
       console.log('Recent expenses fetched:', sortedExpenses.length);
       setRecentExpenses(sortedExpenses);
+
+      // Get usage stats
+      const stats = await limitService.getUsageStats();
+      setUsageStats(stats);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       setError('Failed to load dashboard data. Please try again.');
@@ -144,6 +153,54 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Usage Stats */}
+        <View style={styles.usageSection}>
+          <Text style={styles.usageSectionTitle}>Daily Usage</Text>
+          <View style={styles.usageCards}>
+            <View style={styles.usageCard}>
+              <View style={styles.usageHeader}>
+                <DollarSign size={20} color="#2563eb" />
+                <Text style={styles.usageTitle}>Transactions</Text>
+              </View>
+              <Text style={styles.usageCount}>
+                {usageStats.transactions.used}/{usageStats.transactions.total}
+              </Text>
+              <View style={styles.usageBar}>
+                <View 
+                  style={[
+                    styles.usageProgress, 
+                    { 
+                      width: `${(usageStats.transactions.used / usageStats.transactions.total) * 100}%`,
+                      backgroundColor: usageStats.transactions.used >= usageStats.transactions.total ? '#dc2626' : '#2563eb'
+                    }
+                  ]} 
+                />
+              </View>
+            </View>
+
+            <View style={styles.usageCard}>
+              <View style={styles.usageHeader}>
+                <Users size={20} color="#059669" />
+                <Text style={styles.usageTitle}>Groups</Text>
+              </View>
+              <Text style={styles.usageCount}>
+                {usageStats.groups.used}/{usageStats.groups.total}
+              </Text>
+              <View style={styles.usageBar}>
+                <View 
+                  style={[
+                    styles.usageProgress, 
+                    { 
+                      width: `${(usageStats.groups.used / usageStats.groups.total) * 100}%`,
+                      backgroundColor: usageStats.groups.used >= usageStats.groups.total ? '#dc2626' : '#059669'
+                    }
+                  ]} 
+                />
+              </View>
+            </View>
+          </View>
+        </View>
+
         {/* Balance Cards */}
         <View style={styles.balanceSection}>
           <View style={styles.balanceCard}>
@@ -205,6 +262,15 @@ export default function HomeScreen() {
               <Plus size={24} color="#059669" />
               <Text style={styles.actionTitle}>New Group</Text>
               <Text style={styles.actionSubtitle}>Start splitting expenses</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.actionCard}
+              onPress={() => router.push('/(tabs)/transactions')}
+            >
+              <BarChart3 size={24} color="#ea580c" />
+              <Text style={styles.actionTitle}>Analytics</Text>
+              <Text style={styles.actionSubtitle}>View spending insights</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -395,6 +461,58 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
+  },
+  usageSection: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  usageSectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 12,
+  },
+  usageCards: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  usageCard: {
+    flex: 1,
+    backgroundColor: '#f8fafc',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  usageHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  usageTitle: {
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  usageCount: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  usageBar: {
+    height: 4,
+    backgroundColor: '#e5e7eb',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  usageProgress: {
+    height: '100%',
+    borderRadius: 2,
   },
   balanceSection: {
     padding: 20,
