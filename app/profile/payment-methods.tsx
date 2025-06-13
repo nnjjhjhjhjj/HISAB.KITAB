@@ -9,17 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { 
-  ArrowLeft, 
-  CreditCard, 
-  Plus, 
-  Trash2, 
-  Star,
-  Shield,
-  Smartphone,
-  Building,
-  MoreHorizontal
-} from 'lucide-react-native';
+import { ArrowLeft, CreditCard, Plus, Trash2, Star, Shield, Smartphone, Building, MoveHorizontal as MoreHorizontal } from 'lucide-react-native';
 
 interface PaymentMethod {
   id: string;
