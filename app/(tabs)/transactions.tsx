@@ -17,11 +17,12 @@ import {
   User, 
   Filter,
   Search,
-  Plus
+  Plus,
+  Trash2
 } from 'lucide-react-native';
 import { Group, Expense } from '@/types';
 import { apiService } from '@/services/api';
-
+import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
 export default function TransactionsScreen() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
@@ -29,6 +30,8 @@ export default function TransactionsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'week' | 'month'>('all');
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
 
   const fetchData = async () => {
     try {
@@ -85,6 +88,28 @@ export default function TransactionsScreen() {
     setFilteredExpenses(filtered);
   };
 
+  const handleDeleteExpense = (expense: Expense) => {
+    setSelectedExpense(expense);
+    setDeleteModalVisible(true);
+  };
+
+  const confirmDeleteExpense = async () => {
+    if (!selectedExpense) return;
+
+    try {
+      // In a real app, this would call the API to delete the expense
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Remove from local state
+      setAllExpenses(prev => prev.filter(e => e.id !== selectedExpense.id));
+      setFilteredExpenses(prev => prev.filter(e => e.id !== selectedExpense.id));
+      
+      setSelectedExpense(null);
+    } catch (error) {
+      throw new Error('Failed to delete expense');
+    }
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -113,40 +138,53 @@ export default function TransactionsScreen() {
   };
 
   const renderExpenseCard = ({ item }: { item: Expense }) => (
-    <TouchableOpacity
-      style={styles.expenseCard}
-      onPress={() => router.push(`/group/${item.groupId}`)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.expenseHeader}>
-        <View style={styles.expenseIcon}>
-          <DollarSign size={20} color="#2563eb" />
-        </View>
-        <View style={styles.expenseContent}>
-          <Text style={styles.expenseDescription}>{item.description}</Text>
-          <View style={styles.expenseDetails}>
-            <View style={styles.detailItem}>
-              <User size={12} color="#6b7280" />
-              <Text style={styles.detailText}>Paid by {item.paidBy}</Text>
+    <View style={styles.expenseCard}>
+      <TouchableOpacity
+        style={styles.expenseContent}
+        onPress={() => router.push(`/group/${item.groupId}`)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.expenseHeader}>
+          <View style={styles.expenseIcon}>
+            <DollarSign size={20} color="#2563eb" />
+          </View>
+          <View style={styles.expenseInfo}>
+            <Text style={styles.expenseDescription}>{item.description}</Text>
+            <View style={styles.expenseDetails}>
+              <View style={styles.detailItem}>
+                <User size={12} color="#6b7280" />
+                <Text style={styles.detailText}>Paid by {item.paidBy}</Text>
+              </View>
+              <View style={styles.detailItem}>
+                <Receipt size={12} color="#6b7280" />
+                <Text style={styles.detailText}>{getGroupName(item.groupId)}</Text>
+              </View>
             </View>
-            <View style={styles.detailItem}>
-              <Receipt size={12} color="#6b7280" />
-              <Text style={styles.detailText}>{getGroupName(item.groupId)}</Text>
+            <View style={styles.participantsRow}>
+              <Text style={styles.participantsLabel}>
+                Split between {item.participants.length} people
+              </Text>
             </View>
           </View>
-          <View style={styles.participantsRow}>
-            <Text style={styles.participantsLabel}>
-              Split between {item.participants.length} people
-            </Text>
+          <View style={styles.expenseRight}>
+            <Text style={styles.expenseAmount}>${item.amount.toFixed(2)}</Text>
+            <Text style={styles.expenseDate}>{formatDate(item.createdAt)}</Text>
+            <Text style={styles.expenseTime}>{formatTime(item.createdAt)}</Text>
           </View>
         </View>
-        <View style={styles.expenseRight}>
-          <Text style={styles.expenseAmount}>${item.amount.toFixed(2)}</Text>
-          <Text style={styles.expenseDate}>{formatDate(item.createdAt)}</Text>
-          <Text style={styles.expenseTime}>{formatTime(item.createdAt)}</Text>
-        </View>
+      </TouchableOpacity>
+
+      {/* Delete Button */}
+      <View style={styles.expenseActions}>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => handleDeleteExpense(item)}
+        >
+          <Trash2 size={14} color="#dc2626" />
+          <Text style={styles.deleteButtonText}>Delete</Text>
+        </TouchableOpacity>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 
   const renderFilterButton = (filter: 'all' | 'week' | 'month', label: string) => (
@@ -246,6 +284,21 @@ export default function TransactionsScreen() {
             </TouchableOpacity>
           </View>
         )}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        visible={deleteModalVisible}
+        onClose={() => {
+          setDeleteModalVisible(false);
+          setSelectedExpense(null);
+        }}
+        onConfirm={confirmDeleteExpense}
+        title="Delete Transaction"
+        message={`Are you sure you want to delete "${selectedExpense?.description}"? This action cannot be undone.`}
+        confirmText="Delete Transaction"
+        requiresConfirmation={false}
+        isDangerous={true}
       />
     </SafeAreaView>
   );
@@ -375,7 +428,6 @@ const styles = StyleSheet.create({
   expenseCard: {
     backgroundColor: '#ffffff',
     borderRadius: 12,
-    padding: 16,
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -384,6 +436,9 @@ const styles = StyleSheet.create({
     elevation: 2,
     borderWidth: 1,
     borderColor: '#f3f4f6',
+  },
+  expenseContent: {
+    padding: 16,
   },
   expenseHeader: {
     flexDirection: 'row',
@@ -398,7 +453,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  expenseContent: {
+  expenseInfo: {
     flex: 1,
     marginRight: 12,
   },
@@ -448,6 +503,29 @@ const styles = StyleSheet.create({
   expenseTime: {
     fontSize: 10,
     color: '#9ca3af',
+  },
+  expenseActions: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f3f4f6',
+    alignItems: 'flex-end',
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fef2f2',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+  },
+  deleteButtonText: {
+    marginLeft: 4,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#dc2626',
   },
   emptyContainer: {
     alignItems: 'center',

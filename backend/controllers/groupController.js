@@ -41,12 +41,85 @@ exports.createGroup = async (req, res) => {
         members: savedGroup.members,
         totalExpenses: 0,
         balances: {},
+        inviteCode: savedGroup.inviteCode,
         createdAt: savedGroup.createdAt,
       }
     });
   } catch (error) {
     console.error('Create group error:', error);
     res.status(500).json({ message: 'Server error while creating group' });
+  }
+};
+
+// Join group by invite code
+exports.joinGroup = async (req, res) => {
+  try {
+    const { inviteCode } = req.body;
+
+    if (!inviteCode || !inviteCode.trim()) {
+      return res.status(400).json({ message: 'Invite code is required' });
+    }
+
+    // Find group by invite code
+    const group = await Group.findOne({ inviteCode: inviteCode.trim().toUpperCase() });
+    
+    if (!group) {
+      return res.status(404).json({ message: 'Invalid invite code' });
+    }
+
+    // Check if user is already a member (if using user IDs)
+    // For now, we'll just return success
+    
+    res.json({
+      success: true,
+      data: {
+        id: group._id,
+        name: group.name,
+        description: group.description,
+        members: group.members,
+        inviteCode: group.inviteCode,
+      },
+      message: 'Successfully joined group'
+    });
+  } catch (error) {
+    console.error('Join group error:', error);
+    res.status(500).json({ message: 'Server error while joining group' });
+  }
+};
+
+// Delete group
+exports.deleteGroup = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find group
+    const group = await Group.findById(id);
+    
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found' });
+    }
+
+    // Check if user is the creator
+    if (group.createdBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to delete this group' });
+    }
+
+    // Delete all expenses associated with the group
+    await Expense.deleteMany({ groupId: id });
+
+    // Delete the group
+    await Group.findByIdAndDelete(id);
+
+    res.json({
+      success: true,
+      message: 'Group and all associated expenses deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete group error:', error);
+    if (error.name === 'CastError') {
+      return res.status(400).json({ message: 'Invalid group ID' });
+    }
+    res.status(500).json({ message: 'Server error while deleting group' });
   }
 };
 
@@ -94,6 +167,7 @@ exports.getGroups = async (req, res) => {
             members: group.members,
             totalExpenses,
             balances,
+            inviteCode: group.inviteCode,
             createdAt: group.createdAt,
           };
         } catch (error) {
@@ -105,6 +179,7 @@ exports.getGroups = async (req, res) => {
             members: group.members,
             totalExpenses: 0,
             balances: {},
+            inviteCode: group.inviteCode,
             createdAt: group.createdAt,
           };
         }
@@ -171,6 +246,7 @@ exports.getGroupById = async (req, res) => {
       members: group.members,
       totalExpenses,
       balances,
+      inviteCode: group.inviteCode,
       createdAt: group.createdAt,
     };
 

@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { Group, Expense, User, ApiResponse } from '@/types';
+import { GoogleUser } from './googleAuth';
 
 // API Configuration - Updated to match the backend port
 const API_BASE_URL  = 'http://192.168.1.85:5051';
@@ -87,6 +88,53 @@ export const apiService = {
         throw new Error((error as any).response?.data?.message || 'Registration failed');
       }
       throw new Error('Registration failed');
+    }
+  },
+
+  // Google Authentication
+  async loginWithGoogle(googleUser: GoogleUser): Promise<{ token: string; user: User }> {
+    try {
+      console.log('Attempting Google login with:', { email: googleUser.email });
+      const response = await api.post('/users/google-login', {
+        googleId: googleUser.id,
+        email: googleUser.email,
+        name: googleUser.name,
+        picture: googleUser.picture,
+      });
+      console.log('Google login response:', response.data);
+      
+      const { token, user } = response.data;
+      authToken = token;
+      return { token, user };
+    } catch (error) {
+      console.error('Google login API call failed:', error);
+      if (typeof error === 'object' && error !== null && 'response' in error && typeof (error as any).response === 'object') {
+        throw new Error((error as any).response?.data?.message || 'Google login failed');
+      }
+      throw new Error('Google login failed');
+    }
+  },
+
+  async registerWithGoogle(googleUser: GoogleUser): Promise<{ token: string; user: User }> {
+    try {
+      console.log('Attempting Google registration with:', { email: googleUser.email });
+      const response = await api.post('/users/google-register', {
+        googleId: googleUser.id,
+        email: googleUser.email,
+        name: googleUser.name,
+        picture: googleUser.picture,
+      });
+      console.log('Google registration response:', response.data);
+      
+      const { token, user } = response.data;
+      authToken = token;
+      return { token, user };
+    } catch (error) {
+      console.error('Google registration API call failed:', error);
+      if (typeof error === 'object' && error !== null && 'response' in error && typeof (error as any).response === 'object') {
+        throw new Error((error as any).response?.data?.message || 'Google registration failed');
+      }
+      throw new Error('Google registration failed');
     }
   },
 
@@ -204,6 +252,29 @@ export const apiService = {
         throw new Error((error as any).response?.data?.message || 'Failed to create expense');
       }
       throw new Error('Failed to create expense');
+    }
+  },
+
+  async createUnequalExpense(expense: {
+    groupId: string;
+    description: string;
+    amount: number;
+    paidBy: string;
+    splits: { participant: string; amount: number; percentage?: number }[];
+    date: string;
+  }): Promise<Expense> {
+    try {
+      console.log('Creating unequal expense:', expense);
+      const response = await api.post('/api/expenses/unequal', expense);
+      console.log('Create unequal expense response:', response.data);
+      
+      return response.data.data || response.data;
+    } catch (error) {
+      console.error('Create unequal expense API call failed:', error);
+      if (typeof error === 'object' && error !== null && 'response' in error && typeof (error as any).response === 'object') {
+        throw new Error((error as any).response?.data?.message || 'Failed to create unequal expense');
+      }
+      throw new Error('Failed to create unequal expense');
     }
   },
 };

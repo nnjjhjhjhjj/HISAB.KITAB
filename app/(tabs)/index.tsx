@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Plus, TrendingUp, TrendingDown, DollarSign, Users, Calendar, ArrowUpRight, ArrowDownRight, CircleAlert as AlertCircle, ChartBar as BarChart3 } from 'lucide-react-native';
+import { Plus, TrendingUp, TrendingDown, DollarSign, Users, Calendar, ArrowUpRight, ArrowDownRight, CircleAlert as AlertCircle, ChartBar as BarChart3, Calculator } from 'lucide-react-native';
 import { Group, Expense } from '@/types';
 import { apiService } from '@/services/api';
 import { limitService } from '@/services/limitService';
@@ -266,11 +266,11 @@ export default function HomeScreen() {
 
             <TouchableOpacity 
               style={styles.actionCard}
-              onPress={() => router.push('/(tabs)/transactions')}
+              onPress={() => router.push('./add-expense-quick')}
             >
-              <BarChart3 size={24} color="#ea580c" />
-              <Text style={styles.actionTitle}>Analytics</Text>
-              <Text style={styles.actionSubtitle}>View spending insights</Text>
+              <Calculator size={24} color="#ea580c" />
+              <Text style={styles.actionTitle}>Advanced Split</Text>
+              <Text style={styles.actionSubtitle}>Unequal expense splits</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -301,6 +301,9 @@ export default function HomeScreen() {
                       <Text style={styles.activityTitle}>{expense.description}</Text>
                       <Text style={styles.activitySubtitle}>
                         {group?.name || 'Unknown Group'} • Paid by {expense.paidBy}
+                        {expense.splitType && expense.splitType !== 'equal' && (
+                          <Text style={styles.splitTypeIndicator}> • {expense.splitType} split</Text>
+                        )}
                       </Text>
                     </View>
                     <View style={styles.activityRight}>
@@ -480,7 +483,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   usageCard: {
-    flex: 1,
+    flex:  1,
     backgroundColor: '#f8fafc',
     padding: 16,
     borderRadius: 12,
@@ -652,6 +655,10 @@ const styles = StyleSheet.create({
   activitySubtitle: {
     fontSize: 12,
     color: '#6b7280',
+  },
+  splitTypeIndicator: {
+    color: '#ea580c',
+    fontWeight: '600',
   },
   activityRight: {
     alignItems: 'flex-end',

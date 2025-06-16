@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, User, Phone, ArrowLeft } from 'lucide-react-native';
 import { apiService } from '@/services/api';
+import { googleAuthService } from '@/services/googleAuth';
 
 // Email & phone regex patterns
 const emailRegex = /^\S+@\S+\.\S+$/;
@@ -39,6 +40,7 @@ export default function SignupScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
 
   const updateFormData = (field: string, value: string) => {
@@ -54,7 +56,7 @@ export default function SignupScreen() {
     if (!emailRegex.test(email)) newErrors.email = 'Enter a valid email';
     if (!phoneRegex.test(phone)) newErrors.phone = 'Enter a valid phone number';
     if (password.length < 6) newErrors.password = 'Password must be at least 6 chars';
-    if (password !== confirmPassword) newErrors.confirmPassword = 'Passwords don’t match';
+    if (password !== confirmPassword) newErrors.confirmPassword = 'Passwords dont match';
     if (!acceptTerms) newErrors.terms = 'You must accept the terms';
 
     setErrors(newErrors);
@@ -87,6 +89,53 @@ export default function SignupScreen() {
       Alert.alert('Error', error?.message || 'Signup failed. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSignup = async () => {
+    setGoogleLoading(true);
+    try {
+      const result = await googleAuthService.signInWithGoogle();
+      
+      if (result.success && result.user) {
+        // Try to register with Google user info
+        try {
+          const { token, user } = await apiService.registerWithGoogle(result.user);
+          apiService.setAuthToken(token);
+          
+          Alert.alert('Success', 'Account created with Google!', [
+            {
+              text: 'OK',
+              onPress: () => router.replace('/(tabs)'),
+            },
+          ]);
+        } catch (registerError) {
+          // If registration fails, try to login (user might already exist)
+          try {
+            const { token, user } = await apiService.loginWithGoogle(result.user);
+            apiService.setAuthToken(token);
+            
+            Alert.alert('Success', 'Signed in with existing Google account!', [
+              {
+                text: 'OK',
+                onPress: () => router.replace('/(tabs)'),
+              },
+            ]);
+          } catch (loginError) {
+            console.error('Google login error:', loginError);
+            Alert.alert('Error', 'Failed to sign in with Google');
+          }
+        }
+      } else {
+        if (result.error !== 'User cancelled authentication') {
+          Alert.alert('Error', result.error || 'Google signup failed');
+        }
+      }
+    } catch (error) {
+      console.error('Google signup error:', error);
+      Alert.alert('Error', 'Google signup failed. Please try again.');
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -239,6 +288,28 @@ export default function SignupScreen() {
                 </>
               )}
             </TouchableOpacity>
+
+            {/* Google Signup */}
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.googleButton, googleLoading && styles.googleButtonDisabled]}
+              onPress={handleGoogleSignup}
+              disabled={googleLoading}
+            >
+              {googleLoading ? (
+                <ActivityIndicator color="#374151" size="small" />
+              ) : (
+                <>
+                  <Text style={styles.googleIcon}>G</Text>
+                  <Text style={styles.googleButtonText}>Sign up with Google</Text>
+                </>
+              )}
+            </TouchableOpacity>
           </View>
 
           {/* Footer */}
@@ -337,6 +408,53 @@ const styles = StyleSheet.create({
     shadowOpacity: 0,
   },
   signupButtonText: { fontSize: 16, fontWeight: '600', color: '#fff', marginRight: 8 },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#e5e7eb',
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    fontSize: 14,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  googleButton: {
+    backgroundColor: '#ffffff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  googleButtonDisabled: {
+    backgroundColor: '#f3f4f6',
+    borderColor: '#d1d5db',
+  },
+  googleIcon: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#4285f4',
+    marginRight: 12,
+  },
+  googleButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+  },
   footer: { paddingVertical: 24, alignItems: 'center' },
   footerText: { fontSize: 16, color: '#6b7280' },
   loginLink: { color: '#2563eb', fontWeight: '600' },

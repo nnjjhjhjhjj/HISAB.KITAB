@@ -50,6 +50,7 @@ exports.createExpense = async (req, res) => {
       participants: participants.map(p => p.trim()),
       groupId,
       date,
+      splitType: 'equal',
       createdBy: req.user._id,
     });
 
@@ -63,6 +64,7 @@ exports.createExpense = async (req, res) => {
       amount: savedExpense.amount,
       paidBy: savedExpense.paidBy,
       participants: savedExpense.participants,
+      splitType: savedExpense.splitType,
       date: savedExpense.date,
       createdAt: savedExpense.createdAt,
     };
@@ -77,6 +79,104 @@ exports.createExpense = async (req, res) => {
       return res.status(400).json({ message: 'Invalid group ID' });
     }
     res.status(500).json({ message: 'Server error while creating expense' });
+  }
+};
+
+// Create an unequal expense
+exports.createUnequalExpense = async (req, res) => {
+  try {
+    const { groupId, description, amount, paidBy, splits, date } = req.body;
+
+    // Validation
+    if (!groupId || !description || !amount || !paidBy || !splits || !date) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    if (!Array.isArray(splits) || splits.length === 0) {
+      return res.status(400).json({ message: 'At least one split is required' });
+    }
+
+    if (amount <= 0) {
+      return res.status(400).json({ message: 'Amount must be greater than 0' });
+    }
+
+    // Check if group exists and user has access
+    const group = await Group.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found' });
+    }
+
+    if (group.createdBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to add expenses to this group' });
+    }
+
+    // Validate splits
+    const validMembers = group.members;
+    if (!validMembers.includes(paidBy.trim())) {
+      return res.status(400).json({ message: 'Payer must be a group member' });
+    }
+
+    const totalSplitAmount = splits.reduce((sum, split) => sum + split.amount, 0);
+    if (Math.abs(totalSplitAmount - amount) > 0.01) {
+      return res.status(400).json({ 
+        message: `Split amounts (${totalSplitAmount}) must equal total amount (${amount})` 
+      });
+    }
+
+    const invalidParticipants = splits.filter(split => !validMembers.includes(split.participant.trim()));
+    if (invalidParticipants.length > 0) {
+      return res.status(400).json({ 
+        message: `Invalid participants in splits: ${invalidParticipants.map(p => p.participant).join(', ')}` 
+      });
+    }
+
+    // Determine split type
+    const hasPercentages = splits.some(split => split.percentage !== undefined);
+    const splitType = hasPercentages ? 'percentage' : 'unequal';
+
+    // Create expense
+    const expense = new Expense({
+      description: description.trim(),
+      amount: parseFloat(amount),
+      paidBy: paidBy.trim(),
+      participants: splits.map(split => split.participant.trim()),
+      splits: splits.map(split => ({
+        participant: split.participant.trim(),
+        amount: split.amount,
+        percentage: split.percentage
+      })),
+      splitType,
+      groupId,
+      date,
+      createdBy: req.user._id,
+    });
+
+    const savedExpense = await expense.save();
+
+    // Transform expense to match frontend interface
+    const transformedExpense = {
+      id: savedExpense._id,
+      groupId: savedExpense.groupId,
+      description: savedExpense.description,
+      amount: savedExpense.amount,
+      paidBy: savedExpense.paidBy,
+      participants: savedExpense.participants,
+      splits: savedExpense.splits,
+      splitType: savedExpense.splitType,
+      date: savedExpense.date,
+      createdAt: savedExpense.createdAt,
+    };
+
+    res.status(201).json({
+      success: true,
+      data: transformedExpense
+    });
+  } catch (error) {
+    console.error('Create unequal expense error:', error);
+    if (error.name === 'CastError') {
+      return res.status(400).json({ message: 'Invalid group ID' });
+    }
+    res.status(500).json({ message: 'Server error while creating unequal expense' });
   }
 };
 
@@ -106,6 +206,8 @@ exports.getExpensesByGroup = async (req, res) => {
       amount: expense.amount,
       paidBy: expense.paidBy,
       participants: expense.participants,
+      splits: expense.splits,
+      splitType: expense.splitType,
       date: expense.date,
       createdAt: expense.createdAt,
     }));
@@ -141,6 +243,8 @@ exports.getAllExpenses = async (req, res) => {
       amount: expense.amount,
       paidBy: expense.paidBy,
       participants: expense.participants,
+      splits: expense.splits,
+      splitType: expense.splitType,
       date: expense.date,
       createdAt: expense.createdAt,
     }));

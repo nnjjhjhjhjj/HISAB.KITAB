@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { User, Settings, Bell, Shield, CircleHelp as HelpCircle, LogOut, ChevronRight, Mail, Phone, CreditCard as Edit3, DollarSign, Users, Receipt, Star, Camera, Moon, Globe, CreditCard, Download, Share2 } from 'lucide-react-native';
+import { User, Settings, Bell, Shield, CircleHelp as HelpCircle, LogOut, ChevronRight, Mail, Phone, CreditCard as Edit3, DollarSign, Users, Receipt, Star, Camera, Moon, Globe, CreditCard, Download, Share2, Trash2 } from 'lucide-react-native';
 import { apiService } from '@/services/api';
 import { User as UserType } from '@/types';
 
@@ -103,11 +103,15 @@ export default function ProfileScreen() {
   };
 
   const handleExportData = () => {
-    Alert.alert('Export Data', 'This feature will export all your data to a CSV file.');
+    router.push('/profile/export-data');
   };
 
   const handleShareApp = () => {
-    Alert.alert('Share App', 'Share SplitWise with your friends!');
+    Alert.alert('Share Hisab Kitab', 'Share Hisab Kitab with your friends and family!');
+  };
+
+  const handleDeleteAccount = () => {
+    router.push('/profile/delete-account');
   };
 
   const renderSettingItem = (
@@ -199,7 +203,7 @@ export default function ProfileScreen() {
             {renderStatsCard(
               <DollarSign size={20} color="#059669" />,
               'Total Expenses',
-              `$${stats.totalExpenses.toFixed(2)}`
+              `₹${stats.totalExpenses.toFixed(2)}`
             )}
             {renderStatsCard(
               <Receipt size={20} color="#ea580c" />,
@@ -234,7 +238,7 @@ export default function ProfileScreen() {
             {renderSettingItem(
               <CreditCard size={20} color="#6b7280" />,
               'Payment Methods',
-              'Manage your payment options',
+              'Manage eSewa and bank accounts',
               () => router.push('/profile/payment-methods')
             )}
           </View>
@@ -273,7 +277,7 @@ export default function ProfileScreen() {
             {renderSettingItem(
               <Globe size={20} color="#6b7280" />,
               'Language & Region',
-              'English (US)',
+              'English (Nepal)',
               handleAppSettings
             )}
             {renderSettingItem(
@@ -285,9 +289,9 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Privacy & Security */}
+        {/* Data & Privacy */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Privacy & Security</Text>
+          <Text style={styles.sectionTitle}>Data & Privacy</Text>
           <View style={styles.settingsGroup}>
             {renderSettingItem(
               <Shield size={20} color="#6b7280" />,
@@ -298,7 +302,7 @@ export default function ProfileScreen() {
             {renderSettingItem(
               <Download size={20} color="#6b7280" />,
               'Export Data',
-              'Download your data',
+              'Download your data as CSV',
               handleExportData
             )}
           </View>
@@ -311,7 +315,7 @@ export default function ProfileScreen() {
             {renderSettingItem(
               <HelpCircle size={20} color="#6b7280" />,
               'Help & Support',
-              'Get help with the app',
+              'Get help with Hisab Kitab',
               handleHelp
             )}
             {renderSettingItem(
@@ -322,8 +326,8 @@ export default function ProfileScreen() {
             )}
             {renderSettingItem(
               <Share2 size={20} color="#6b7280" />,
-              'Share App',
-              'Invite friends to SplitWise',
+              'Share Hisab Kitab',
+              'Invite friends to use the app',
               handleShareApp
             )}
           </View>
@@ -335,9 +339,25 @@ export default function ProfileScreen() {
           <View style={styles.settingsGroup}>
             {renderSettingItem(
               <Settings size={20} color="#6b7280" />,
-              'About SplitWise',
+              'About Hisab Kitab',
               'Version 1.0.0',
               handleAbout
+            )}
+          </View>
+        </View>
+
+        {/* Danger Zone */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Danger Zone</Text>
+          <View style={styles.settingsGroup}>
+            {renderSettingItem(
+              <Trash2 size={20} color="#dc2626" />,
+              'Delete Account',
+              'Permanently delete your account and all data',
+              handleDeleteAccount,
+              undefined,
+              true,
+              true
             )}
           </View>
         </View>
@@ -359,8 +379,8 @@ export default function ProfileScreen() {
 
         {/* App Version */}
         <View style={styles.versionContainer}>
-          <Text style={styles.versionText}>SplitWise v1.0.0</Text>
-          <Text style={styles.versionSubtext}>Made with ❤️ for expense sharing</Text>
+          <Text style={styles.versionText}>Hisab Kitab v1.0.0</Text>
+          <Text style={styles.versionSubtext}>Made with ❤️ in Nepal 🇳🇵</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

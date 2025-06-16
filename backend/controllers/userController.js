@@ -114,6 +114,126 @@ exports.loginUser = async (req, res) => {
   }
 };
 
+// Google Login
+exports.googleLogin = async (req, res) => {
+  try {
+    console.log('Google login attempt:', { email: req.body.email });
+    
+    const { googleId, email, name, picture } = req.body;
+
+    // Validation
+    if (!googleId || !email || !name) {
+      console.log('Google login failed: Missing required fields');
+      return res.status(400).json({ message: 'Google ID, email, and name are required' });
+    }
+
+    // Find user by Google ID or email
+    let user = await User.findOne({ 
+      $or: [
+        { googleId: googleId },
+        { email: email.toLowerCase().trim() }
+      ]
+    });
+
+    if (!user) {
+      console.log('Google login failed: User not found');
+      return res.status(400).json({ message: 'User not found. Please register first.' });
+    }
+
+    // Update Google ID if not set
+    if (!user.googleId) {
+      user.googleId = googleId;
+      user.picture = picture;
+      await user.save();
+    }
+
+    console.log('Google login successful:', { id: user._id, email: user.email });
+
+    // Generate token
+    const token = jwt.sign(
+      { id: user._id }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: '7d' }
+    );
+
+    res.json({ 
+      success: true,
+      token, 
+      user: { 
+        id: user._id, 
+        name: user.name, 
+        email: user.email,
+        picture: user.picture
+      },
+      message: 'Google login successful'
+    });
+  } catch (error) {
+    console.error('Google login error:', error);
+    res.status(500).json({ message: 'Server error during Google login' });
+  }
+};
+
+// Google Register
+exports.googleRegister = async (req, res) => {
+  try {
+    console.log('Google registration attempt:', { email: req.body.email });
+    
+    const { googleId, email, name, picture } = req.body;
+
+    // Validation
+    if (!googleId || !email || !name) {
+      console.log('Google registration failed: Missing required fields');
+      return res.status(400).json({ message: 'Google ID, email, and name are required' });
+    }
+
+    // Check if user exists
+    const userExists = await User.findOne({ 
+      $or: [
+        { googleId: googleId },
+        { email: email.toLowerCase().trim() }
+      ]
+    });
+    
+    if (userExists) {
+      console.log('Google registration failed: User already exists');
+      return res.status(400).json({ message: 'User already exists with this email or Google account' });
+    }
+
+    // Create user with Google data
+    const user = await User.create({ 
+      name: name.trim(), 
+      email: email.toLowerCase().trim(), 
+      googleId: googleId,
+      picture: picture,
+      password: 'google_auth' // Placeholder password for Google users
+    });
+
+    console.log('Google user created successfully:', { id: user._id, email: user.email });
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: user._id }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: '7d' }
+    );
+
+    res.status(201).json({ 
+      success: true,
+      token, 
+      user: { 
+        id: user._id, 
+        name: user.name, 
+        email: user.email,
+        picture: user.picture
+      },
+      message: 'Google user registered successfully'
+    });
+  } catch (error) {
+    console.error('Google register user error:', error);
+    res.status(500).json({ message: 'Server error during Google registration' });
+  }
+};
+
 // Get user profile
 exports.getUserProfile = async (req, res) => {
   try {
@@ -129,6 +249,7 @@ exports.getUserProfile = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        picture: user.picture,
         createdAt: user.createdAt
       }
     });

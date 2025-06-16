@@ -28,12 +28,13 @@ const groupSchema = new mongoose.Schema({
     type: String,
     unique: true,
     required: true,
-    default: () => uuidv4().slice(0, 8) // Generates short unique code
+    default: () => uuidv4().slice(0, 8).toUpperCase() // Generates short unique code
   }
 }, { 
   timestamps: true 
 });
 
 groupSchema.index({ createdBy: 1, createdAt: -1 });
+groupSchema.index({ inviteCode: 1 });
 
 module.exports = mongoose.model('Group', groupSchema);

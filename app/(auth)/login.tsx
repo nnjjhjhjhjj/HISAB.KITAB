@@ -15,12 +15,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, User } from 'lucide-react-native';
 import { apiService } from '@/services/api';
+import { googleAuthService } from '@/services/googleAuth';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -47,6 +49,54 @@ export default function LoginScreen() {
       Alert.alert('Error', 'Login failed. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+    try {
+      const result = await googleAuthService.signInWithGoogle();
+      
+      if (result.success && result.user) {
+        // Try to login with Google user info
+        try {
+          // First try to login if user exists
+          const { token, user } = await apiService.loginWithGoogle(result.user);
+          apiService.setAuthToken(token);
+          
+          Alert.alert('Success', 'Google login successful!', [
+            {
+              text: 'OK',
+              onPress: () => router.replace('/(tabs)'),
+            },
+          ]);
+        } catch (loginError) {
+          // If login fails, try to register
+          try {
+            const { token, user } = await apiService.registerWithGoogle(result.user);
+            apiService.setAuthToken(token);
+            
+            Alert.alert('Success', 'Account created with Google!', [
+              {
+                text: 'OK',
+                onPress: () => router.replace('/(tabs)'),
+              },
+            ]);
+          } catch (registerError) {
+            console.error('Google registration error:', registerError);
+            Alert.alert('Error', 'Failed to create account with Google');
+          }
+        }
+      } else {
+        if (result.error !== 'User cancelled authentication') {
+          Alert.alert('Error', result.error || 'Google login failed');
+        }
+      }
+    } catch (error) {
+      console.error('Google login error:', error);
+      Alert.alert('Error', 'Google login failed. Please try again.');
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -163,14 +213,30 @@ export default function LoginScreen() {
               )}
             </TouchableOpacity>
 
+            {/* Google Sign In */}
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.googleButton, googleLoading && styles.googleButtonDisabled]}
+              onPress={handleGoogleLogin}
+              disabled={googleLoading}
+            >
+              {googleLoading ? (
+                <ActivityIndicator color="#374151" size="small" />
+              ) : (
+                <>
+                  <Text style={styles.googleIcon}>G</Text>
+                  <Text style={styles.googleButtonText}>Continue with Google</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
             {/* Demo Account */}
             <View style={styles.demoSection}>
-              <View style={styles.divider}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>or</Text>
-                <View style={styles.dividerLine} />
-              </View>
-
               <TouchableOpacity
                 style={[styles.demoButton, loading && styles.demoButtonDisabled]}
                 onPress={handleDemoLogin}
@@ -324,9 +390,6 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     marginRight: 8,
   },
-  demoSection: {
-    marginBottom: 32,
-  },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -342,6 +405,40 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6b7280',
     fontWeight: '500',
+  },
+  googleButton: {
+    backgroundColor: '#ffffff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  googleButtonDisabled: {
+    backgroundColor: '#f3f4f6',
+    borderColor: '#d1d5db',
+  },
+  googleIcon: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#4285f4',
+    marginRight: 12,
+  },
+  googleButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  demoSection: {
+    marginBottom: 32,
   },
   demoButton: {
     backgroundColor: '#ffffff',
