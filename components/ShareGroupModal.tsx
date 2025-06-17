@@ -18,15 +18,17 @@ interface ShareGroupModalProps {
   group: {
     id: string;
     name: string;
-    inviteCode: string;
+    inviteCode?: string;
+    inviteLink?: string;
   };
 }
 
 export default function ShareGroupModal({ visible, onClose, group }: ShareGroupModalProps) {
   const [customMessage, setCustomMessage] = useState('');
   
-  const shareUrl = `https://hisabkitab.com/join/${group.inviteCode}`;
-  const defaultMessage = `Join "${group.name}" on Hisab Kitab to split expenses together! Use invite code: ${group.inviteCode} or click: ${shareUrl}`;
+  const shareUrl = group.inviteLink || `https://myapp.com/join/${group.id}`;
+  const inviteCode = group.inviteCode || 'N/A';
+  const defaultMessage = `Join "${group.name}" on Hisab Kitab to split expenses together! Use invite code: ${inviteCode} or click: ${shareUrl}`;
 
   const handleCopyLink = async () => {
     try {
@@ -39,7 +41,7 @@ export default function ShareGroupModal({ visible, onClose, group }: ShareGroupM
 
   const handleCopyCode = async () => {
     try {
-      await Clipboard.setString(group.inviteCode);
+      await Clipboard.setString(inviteCode);
       Alert.alert('Copied!', 'Invite code copied to clipboard');
     } catch (error) {
       Alert.alert('Error', 'Failed to copy code');
@@ -102,7 +104,7 @@ export default function ShareGroupModal({ visible, onClose, group }: ShareGroupM
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Invite Code</Text>
             <View style={styles.codeContainer}>
-              <Text style={styles.inviteCode}>{group.inviteCode}</Text>
+              <Text style={styles.inviteCode}>{inviteCode}</Text>
               <TouchableOpacity style={styles.copyButton} onPress={handleCopyCode}>
                 <Copy size={16} color="#2563eb" />
               </TouchableOpacity>

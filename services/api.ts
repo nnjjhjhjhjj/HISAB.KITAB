@@ -212,6 +212,22 @@ export const apiService = {
     }
   },
 
+  async joinGroupById(groupId: string): Promise<Group> {
+    try {
+      console.log('Joining group by ID:', groupId);
+      const response = await api.post(`/api/groups/${groupId}/join`);
+      console.log('Join group response:', response.data);
+      
+      return response.data.data || response.data;
+    } catch (error) {
+      console.error('Join group API call failed:', error);
+      if (typeof error === 'object' && error !== null && 'response' in error && typeof (error as any).response === 'object') {
+        throw new Error((error as any).response?.data?.message || 'Failed to join group');
+      }
+      throw new Error('Failed to join group');
+    }
+  },
+
   // Expenses
   async getGroupExpenses(groupId: string): Promise<Expense[]> {
     try {

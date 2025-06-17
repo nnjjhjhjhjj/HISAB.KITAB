@@ -10,9 +10,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
-import { ArrowLeft, Plus, DollarSign, Calendar, User } from 'lucide-react-native';
+import { ArrowLeft, Plus, DollarSign, Calendar, User, Share2 } from 'lucide-react-native';
 import { Group, Expense } from '@/types';
 import { apiService } from '@/services/api';
+import ShareGroupModal from '@/components/ShareGroupModal';
 
 export default function GroupScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -21,6 +22,7 @@ export default function GroupScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const fetchGroupData = async () => {
     if (!id) return;
@@ -59,6 +61,12 @@ export default function GroupScreen() {
       day: 'numeric',
       year: 'numeric',
     });
+  };
+
+  const handleShareGroup = () => {
+    if (group) {
+      setShowShareModal(true);
+    }
   };
 
   const renderExpenseCard = ({ item }: { item: Expense }) => (
@@ -172,6 +180,12 @@ export default function GroupScreen() {
           <Text style={styles.title}>{group.name}</Text>
           <Text style={styles.subtitle}>{group.description}</Text>
         </View>
+        <TouchableOpacity
+          style={styles.shareButton}
+          onPress={handleShareGroup}
+        >
+          <Share2 size={20} color="#2563eb" />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.summaryCard}>
@@ -229,6 +243,20 @@ export default function GroupScreen() {
           </View>
         )}
       />
+
+      {/* Share Group Modal */}
+      {group && (
+        <ShareGroupModal
+          visible={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          group={{
+            id: group.id,
+            name: group.name,
+            inviteCode: group.inviteCode,
+            inviteLink: group.inviteLink,
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -263,6 +291,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6b7280',
     marginTop: 2,
+  },
+  shareButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#eff6ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 12,
   },
   loadingContainer: {
     flex: 1,

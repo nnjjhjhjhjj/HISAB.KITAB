@@ -5,6 +5,8 @@ export interface Group {
   members: string[];
   totalExpenses: number;
   balances: { [userId: string]: number };
+  inviteCode?: string;
+  inviteLink?: string;
   createdAt: string;
 }
 

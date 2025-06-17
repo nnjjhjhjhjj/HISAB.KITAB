@@ -32,6 +32,9 @@ exports.createGroup = async (req, res) => {
 
     const savedGroup = await group.save();
 
+    // Generate invite link
+    const inviteLink = `https://myapp.com/join/${savedGroup._id}`;
+
     res.status(201).json({
       success: true,
       data: {
@@ -42,12 +45,70 @@ exports.createGroup = async (req, res) => {
         totalExpenses: 0,
         balances: {},
         inviteCode: savedGroup.inviteCode,
+        inviteLink: inviteLink,
         createdAt: savedGroup.createdAt,
       }
     });
   } catch (error) {
     console.error('Create group error:', error);
     res.status(500).json({ message: 'Server error while creating group' });
+  }
+};
+
+// Join group by ID
+exports.joinGroupById = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const userId = req.user._id;
+    const userName = req.user.name;
+
+    if (!groupId) {
+      return res.status(400).json({ message: 'Group ID is required' });
+    }
+
+    // Find group by ID
+    const group = await Group.findById(groupId);
+    
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found' });
+    }
+
+    // Check if user is already a member
+    if (group.members.includes(userName)) {
+      return res.json({
+        success: true,
+        data: {
+          id: group._id,
+          name: group.name,
+          description: group.description,
+          members: group.members,
+          inviteCode: group.inviteCode,
+        },
+        message: 'You are already a member of this group'
+      });
+    }
+
+    // Add user to group members
+    group.members.push(userName);
+    await group.save();
+
+    res.json({
+      success: true,
+      data: {
+        id: group._id,
+        name: group.name,
+        description: group.description,
+        members: group.members,
+        inviteCode: group.inviteCode,
+      },
+      message: 'Successfully joined group'
+    });
+  } catch (error) {
+    console.error('Join group by ID error:', error);
+    if (error.name === 'CastError') {
+      return res.status(400).json({ message: 'Invalid group ID' });
+    }
+    res.status(500).json({ message: 'Server error while joining group' });
   }
 };
 
@@ -160,6 +221,9 @@ exports.getGroups = async (req, res) => {
             });
           });
 
+          // Generate invite link
+          const inviteLink = `https://myapp.com/join/${group._id}`;
+
           return {
             id: group._id,
             name: group.name,
@@ -168,6 +232,7 @@ exports.getGroups = async (req, res) => {
             totalExpenses,
             balances,
             inviteCode: group.inviteCode,
+            inviteLink: inviteLink,
             createdAt: group.createdAt,
           };
         } catch (error) {
@@ -180,6 +245,7 @@ exports.getGroups = async (req, res) => {
             totalExpenses: 0,
             balances: {},
             inviteCode: group.inviteCode,
+            inviteLink: `https://myapp.com/join/${group._id}`,
             createdAt: group.createdAt,
           };
         }
@@ -238,6 +304,9 @@ exports.getGroupById = async (req, res) => {
       });
     });
 
+    // Generate invite link
+    const inviteLink = `https://myapp.com/join/${group._id}`;
+
     // Transform group to match frontend interface
     const transformedGroup = {
       id: group._id,
@@ -247,6 +316,7 @@ exports.getGroupById = async (req, res) => {
       totalExpenses,
       balances,
       inviteCode: group.inviteCode,
+      inviteLink: inviteLink,
       createdAt: group.createdAt,
     };
 
