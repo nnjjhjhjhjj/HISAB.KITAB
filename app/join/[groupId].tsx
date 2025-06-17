@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
-import { Users, CheckCircle, XCircle, ArrowRight, Home } from 'lucide-react-native';
+import { Users, CircleCheck as CheckCircle, Circle as XCircle, ArrowRight, Chrome as Home } from 'lucide-react-native';
 import { apiService } from '@/services/api';
 import { Group } from '@/types';
 
