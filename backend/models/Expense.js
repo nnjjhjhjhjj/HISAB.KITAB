@@ -39,9 +39,21 @@ const expenseSchema = new mongoose.Schema({
       max: 100
     }
   }],
+  payers: [{
+    name: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    amountPaid: {
+      type: Number,
+      required: true,
+      min: 0
+    }
+  }],
   splitType: {
     type: String,
-    enum: ['equal', 'unequal', 'percentage'],
+    enum: ['equal', 'unequal', 'percentage', 'shares'],
     default: 'equal'
   },
   groupId: { 

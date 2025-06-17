@@ -82,18 +82,14 @@ exports.createExpense = async (req, res) => {
   }
 };
 
-// Create an unequal expense
+// Create an unequal expense (for advanced splits)
 exports.createUnequalExpense = async (req, res) => {
   try {
-    const { groupId, description, amount, paidBy, splits, date } = req.body;
+    const { groupId, description, amount, paidBy, splits, date, payers, splitType } = req.body;
 
     // Validation
-    if (!groupId || !description || !amount || !paidBy || !splits || !date) {
-      return res.status(400).json({ message: 'All fields are required' });
-    }
-
-    if (!Array.isArray(splits) || splits.length === 0) {
-      return res.status(400).json({ message: 'At least one split is required' });
+    if (!groupId || !description || !amount || !date) {
+      return res.status(400).json({ message: 'All required fields must be provided' });
     }
 
     if (amount <= 0) {
@@ -110,42 +106,96 @@ exports.createUnequalExpense = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to add expenses to this group' });
     }
 
-    // Validate splits
-    const validMembers = group.members;
-    if (!validMembers.includes(paidBy.trim())) {
-      return res.status(400).json({ message: 'Payer must be a group member' });
+    // Validate payers if provided
+    let finalPaidBy = paidBy;
+    let finalPayers = [];
+    
+    if (payers && Array.isArray(payers) && payers.length > 0) {
+      // Multi-payer expense
+      const validMembers = group.members;
+      
+      // Validate all payers are group members
+      const invalidPayers = payers.filter(payer => !validMembers.includes(payer.name.trim()));
+      if (invalidPayers.length > 0) {
+        return res.status(400).json({ 
+          message: `Invalid payers: ${invalidPayers.map(p => p.name).join(', ')}` 
+        });
+      }
+
+      // Validate total paid amount equals expense amount
+      const totalPaid = payers.reduce((sum, payer) => sum + payer.amountPaid, 0);
+      if (Math.abs(totalPaid - amount) > 0.01) {
+        return res.status(400).json({ 
+          message: `Total paid amount (${totalPaid}) must equal expense amount (${amount})` 
+        });
+      }
+
+      finalPaidBy = payers.length === 1 ? payers[0].name : 'Multiple';
+      finalPayers = payers.map(payer => ({
+        name: payer.name.trim(),
+        amountPaid: payer.amountPaid
+      }));
+    } else {
+      // Single payer expense
+      if (!paidBy) {
+        return res.status(400).json({ message: 'Payer is required' });
+      }
+      
+      const validMembers = group.members;
+      if (!validMembers.includes(paidBy.trim())) {
+        return res.status(400).json({ message: 'Payer must be a group member' });
+      }
+      
+      finalPaidBy = paidBy.trim();
+      finalPayers = [{ name: finalPaidBy, amountPaid: amount }];
     }
 
-    const totalSplitAmount = splits.reduce((sum, split) => sum + split.amount, 0);
-    if (Math.abs(totalSplitAmount - amount) > 0.01) {
-      return res.status(400).json({ 
-        message: `Split amounts (${totalSplitAmount}) must equal total amount (${amount})` 
-      });
-    }
+    // Validate splits if provided
+    let finalSplits = [];
+    let finalParticipants = [];
+    
+    if (splits && Array.isArray(splits) && splits.length > 0) {
+      const validMembers = group.members;
+      
+      // Validate all participants are group members
+      const invalidParticipants = splits.filter(split => !validMembers.includes(split.participant.trim()));
+      if (invalidParticipants.length > 0) {
+        return res.status(400).json({ 
+          message: `Invalid participants in splits: ${invalidParticipants.map(p => p.participant).join(', ')}` 
+        });
+      }
 
-    const invalidParticipants = splits.filter(split => !validMembers.includes(split.participant.trim()));
-    if (invalidParticipants.length > 0) {
-      return res.status(400).json({ 
-        message: `Invalid participants in splits: ${invalidParticipants.map(p => p.participant).join(', ')}` 
-      });
+      // Validate total split amount equals expense amount
+      const totalSplit = splits.reduce((sum, split) => sum + split.amount, 0);
+      if (Math.abs(totalSplit - amount) > 0.01) {
+        return res.status(400).json({ 
+          message: `Total split amount (${totalSplit}) must equal expense amount (${amount})` 
+        });
+      }
+
+      finalSplits = splits.map(split => ({
+        participant: split.participant.trim(),
+        amount: split.amount,
+        percentage: split.percentage
+      }));
+      
+      finalParticipants = splits.map(split => split.participant.trim());
+    } else {
+      return res.status(400).json({ message: 'Splits are required for advanced expenses' });
     }
 
     // Determine split type
-    const hasPercentages = splits.some(split => split.percentage !== undefined);
-    const splitType = hasPercentages ? 'percentage' : 'unequal';
+    const finalSplitType = splitType || 'unequal';
 
     // Create expense
     const expense = new Expense({
       description: description.trim(),
       amount: parseFloat(amount),
-      paidBy: paidBy.trim(),
-      participants: splits.map(split => split.participant.trim()),
-      splits: splits.map(split => ({
-        participant: split.participant.trim(),
-        amount: split.amount,
-        percentage: split.percentage
-      })),
-      splitType,
+      paidBy: finalPaidBy,
+      participants: finalParticipants,
+      splits: finalSplits,
+      payers: finalPayers,
+      splitType: finalSplitType,
       groupId,
       date,
       createdBy: req.user._id,
@@ -162,6 +212,7 @@ exports.createUnequalExpense = async (req, res) => {
       paidBy: savedExpense.paidBy,
       participants: savedExpense.participants,
       splits: savedExpense.splits,
+      payers: savedExpense.payers,
       splitType: savedExpense.splitType,
       date: savedExpense.date,
       createdAt: savedExpense.createdAt,
@@ -207,6 +258,7 @@ exports.getExpensesByGroup = async (req, res) => {
       paidBy: expense.paidBy,
       participants: expense.participants,
       splits: expense.splits,
+      payers: expense.payers,
       splitType: expense.splitType,
       date: expense.date,
       createdAt: expense.createdAt,
@@ -244,6 +296,7 @@ exports.getAllExpenses = async (req, res) => {
       paidBy: expense.paidBy,
       participants: expense.participants,
       splits: expense.splits,
+      payers: expense.payers,
       splitType: expense.splitType,
       date: expense.date,
       createdAt: expense.createdAt,

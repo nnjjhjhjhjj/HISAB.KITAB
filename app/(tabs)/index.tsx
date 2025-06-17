@@ -266,11 +266,11 @@ export default function HomeScreen() {
 
             <TouchableOpacity 
               style={styles.actionCard}
-              onPress={() => router.push('./add-expense-quick')}
+              onPress={() => router.push('/add-expense-advanced')}
             >
               <Calculator size={24} color="#ea580c" />
               <Text style={styles.actionTitle}>Advanced Split</Text>
-              <Text style={styles.actionSubtitle}>Unequal expense splits</Text>
+              <Text style={styles.actionSubtitle}>Multi-payer & custom splits</Text>
             </TouchableOpacity>
           </View>
         </View>

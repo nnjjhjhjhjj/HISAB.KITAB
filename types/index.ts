@@ -16,7 +16,8 @@ export interface Expense {
   paidBy: string;
   participants: string[];
   splits?: { participant: string; amount: number; percentage?: number }[];
-  splitType?: 'equal' | 'unequal' | 'percentage';
+  payers?: { name: string; amountPaid: number }[];
+  splitType?: 'equal' | 'unequal' | 'percentage' | 'shares';
   date: string;
   createdAt: string;
 }
@@ -39,4 +40,9 @@ export interface ExpenseSplit {
   participant: string;
   amount: number;
   percentage?: number;
+}
+
+export interface Payer {
+  name: string;
+  amountPaid: number;
 }
