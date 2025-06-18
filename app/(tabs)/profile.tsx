@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { User, Settings, Bell, Shield, CircleHelp as HelpCircle, LogOut, ChevronRight, Mail, Phone, CreditCard as Edit3, DollarSign, Users, Receipt, Star, Camera, Moon, Globe, CreditCard, Download, Share2, Trash2 } from 'lucide-react-native';
+import { User, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Mail, CreditCard, Download } from 'lucide-react-native';
 import { apiService } from '@/services/api';
 import { User as UserType } from '@/types';
 
@@ -82,38 +82,6 @@ export default function ProfileScreen() {
     router.push('/profile/change-password');
   };
 
-  const handleNotificationSettings = () => {
-    router.push('/profile/notifications');
-  };
-
-  const handlePrivacySettings = () => {
-    router.push('/profile/privacy');
-  };
-
-  const handleAppSettings = () => {
-    router.push('/profile/settings');
-  };
-
-  const handleHelp = () => {
-    router.push('/profile/help');
-  };
-
-  const handleAbout = () => {
-    router.push('/profile/about');
-  };
-
-  const handleExportData = () => {
-    router.push('/profile/export-data');
-  };
-
-  const handleShareApp = () => {
-    Alert.alert('Share Hisab Kitab', 'Share Hisab Kitab with your friends and family!');
-  };
-
-  const handleDeleteAccount = () => {
-    router.push('/profile/delete-account');
-  };
-
   const renderSettingItem = (
     icon: React.ReactNode,
     title: string,
@@ -169,7 +137,7 @@ export default function ProfileScreen() {
         <View style={styles.header}>
           <Text style={styles.title}>Profile</Text>
           <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
-            <Edit3 size={20} color="#2563eb" />
+            <User size={20} color="#2563eb" />
           </TouchableOpacity>
         </View>
 
@@ -180,14 +148,10 @@ export default function ProfileScreen() {
               source={{ uri: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=400' }} 
               style={styles.avatar} 
             />
-            <TouchableOpacity style={styles.cameraButton}>
-              <Camera size={16} color="#ffffff" />
-            </TouchableOpacity>
           </View>
           <View style={styles.profileInfo}>
             <Text style={styles.userName}>{user?.name || 'User Name'}</Text>
             <Text style={styles.userEmail}>{user?.email || 'user@example.com'}</Text>
-            
           </View>
         </View>
 
@@ -196,17 +160,17 @@ export default function ProfileScreen() {
           <Text style={styles.sectionTitle}>Your Activity</Text>
           <View style={styles.statsGrid}>
             {renderStatsCard(
-              <Users size={20} color="#2563eb" />,
+              <User size={20} color="#2563eb" />,
               'Groups',
               stats.totalGroups
             )}
             {renderStatsCard(
-              <DollarSign size={20} color="#059669" />,
+              <CreditCard size={20} color="#059669" />,
               'Total Expenses',
               `₹${stats.totalExpenses.toFixed(2)}`
             )}
             {renderStatsCard(
-              <Receipt size={20} color="#ea580c" />,
+              <Download size={20} color="#ea580c" />,
               'Transactions',
               stats.totalTransactions
             )}
@@ -215,7 +179,7 @@ export default function ProfileScreen() {
 
         {/* Account Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
+          <Text style={styles.sectionTitle}>Account Settings</Text>
           <View style={styles.settingsGroup}>
             {renderSettingItem(
               <User size={20} color="#6b7280" />,
@@ -226,20 +190,13 @@ export default function ProfileScreen() {
             {renderSettingItem(
               <Mail size={20} color="#6b7280" />,
               'Email',
-              user?.email || 'user@example.com',
-              handleEditProfile
+              user?.email || 'user@example.com'
             )}
             {renderSettingItem(
               <Shield size={20} color="#6b7280" />,
               'Change Password',
               'Update your account password',
               handleChangePassword
-            )}
-            {renderSettingItem(
-              <CreditCard size={20} color="#6b7280" />,
-              'Payment Methods',
-              'Manage eSewa and bank accounts',
-              () => router.push('/profile/payment-methods')
             )}
           </View>
         </View>
@@ -252,7 +209,7 @@ export default function ProfileScreen() {
               <Bell size={20} color="#6b7280" />,
               'Notifications',
               'Push notifications for expenses',
-              handleNotificationSettings,
+              undefined,
               <Switch
                 value={notificationsEnabled}
                 onValueChange={setNotificationsEnabled}
@@ -262,7 +219,7 @@ export default function ProfileScreen() {
               false
             )}
             {renderSettingItem(
-              <Moon size={20} color="#6b7280" />,
+              <Settings size={20} color="#6b7280" />,
               'Dark Mode',
               'Switch to dark theme',
               undefined,
@@ -274,36 +231,18 @@ export default function ProfileScreen() {
               />,
               false
             )}
-            {renderSettingItem(
-              <Globe size={20} color="#6b7280" />,
-              'Language & Region',
-              'English (Nepal)',
-              handleAppSettings
-            )}
-            {renderSettingItem(
-              <Settings size={20} color="#6b7280" />,
-              'App Settings',
-              'Currency, date format, and more',
-              handleAppSettings
-            )}
           </View>
         </View>
 
-        {/* Data & Privacy */}
+        {/* Data Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Data & Privacy</Text>
+          <Text style={styles.sectionTitle}>Data</Text>
           <View style={styles.settingsGroup}>
-            {renderSettingItem(
-              <Shield size={20} color="#6b7280" />,
-              'Privacy Settings',
-              'Control your data and privacy',
-              handlePrivacySettings
-            )}
             {renderSettingItem(
               <Download size={20} color="#6b7280" />,
               'Export Data',
               'Download your data as CSV',
-              handleExportData
+              () => Alert.alert('Export Data', 'Feature coming soon')
             )}
           </View>
         </View>
@@ -314,50 +253,8 @@ export default function ProfileScreen() {
           <View style={styles.settingsGroup}>
             {renderSettingItem(
               <HelpCircle size={20} color="#6b7280" />,
-              'Help & Support',
-              'Get help with Hisab Kitab',
-              handleHelp
-            )}
-            {renderSettingItem(
-              <Star size={20} color="#6b7280" />,
-              'Rate the App',
-              'Share your feedback',
-              () => Alert.alert('Rate App', 'Thank you for your feedback!')
-            )}
-            {renderSettingItem(
-              <Share2 size={20} color="#6b7280" />,
-              'Share Hisab Kitab',
-              'Invite friends to use the app',
-              handleShareApp
-            )}
-          </View>
-        </View>
-
-        {/* About Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>About</Text>
-          <View style={styles.settingsGroup}>
-            {renderSettingItem(
-              <Settings size={20} color="#6b7280" />,
-              'About Hisab Kitab',
-              'Version 1.0.0',
-              handleAbout
-            )}
-          </View>
-        </View>
-
-        {/* Danger Zone */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Danger Zone</Text>
-          <View style={styles.settingsGroup}>
-            {renderSettingItem(
-              <Trash2 size={20} color="#dc2626" />,
-              'Delete Account',
-              'Permanently delete your account and all data',
-              handleDeleteAccount,
-              undefined,
-              true,
-              true
+              'Help Center',
+              'Get help with the app'
             )}
           </View>
         </View>
@@ -380,7 +277,6 @@ export default function ProfileScreen() {
         {/* App Version */}
         <View style={styles.versionContainer}>
           <Text style={styles.versionText}>Hisab Kitab v1.0.0</Text>
-          <Text style={styles.versionSubtext}>Made with ❤️ in Nepal 🇳🇵</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -449,19 +345,6 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
   },
-  cameraButton: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#2563eb',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#ffffff',
-  },
   profileInfo: {
     alignItems: 'center',
   },
@@ -475,10 +358,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6b7280',
     marginBottom: 4,
-  },
-  joinDate: {
-    fontSize: 14,
-    color: '#9ca3af',
   },
   statsSection: {
     paddingHorizontal: 20,
@@ -584,9 +463,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#9ca3af',
     marginBottom: 4,
-  },
-  versionSubtext: {
-    fontSize: 12,
-    color: '#d1d5db',
   },
 });

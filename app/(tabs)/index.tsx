@@ -291,7 +291,7 @@ export default function HomeScreen() {
               <View style={[styles.actionIcon, { backgroundColor: '#F59E0B' }]}>
                 <Calculator size={20} color="#FFFFFF" />
               </View>
-              <Text style={styles.actionTitle}> Split money</Text>
+              <Text style={styles.actionTitle}> Split mone</Text>
               <Text style={styles.actionSubtitle}>Custom splits</Text>
             </TouchableOpacity>
           </ScrollView>
