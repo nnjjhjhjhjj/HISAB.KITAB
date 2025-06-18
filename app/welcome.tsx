@@ -8,6 +8,7 @@ import {
   Animated,
   Easing,
   Dimensions,
+  ImageBackground,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -20,15 +21,19 @@ import {
   Shield,
   Smartphone,
   Star,
-  Heart
+  Heart,
+  ChevronRight
 } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 export default function WelcomeScreen() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const fadeAnim = useState(new Animated.Value(0))[0];
   const slideAnim = useState(new Animated.Value(0))[0];
+  const buttonScale = useState(new Animated.Value(1))[0];
+  const [isSliding, setIsSliding] = useState(false);
 
   const slides = [
     {
@@ -36,40 +41,45 @@ export default function WelcomeScreen() {
       title: 'Welcome to SplitSaathi',
       subtitle: 'Smart Expense Sharing for Nepal',
       description: 'Split bills, track expenses, and settle up with friends and family - all in one beautiful app designed for Nepali users.',
-      icon: <Heart size={80} color="#4f46e5" />,
-      color: '#4f46e5',
+      icon: <Heart size={80} color="#ffffff" />,
+      color: '#6d28d9',
+      bgColor: '#8b5cf6',
     },
     {
       id: 2,
       title: 'Create Groups Easily',
       subtitle: 'Organize Your Expenses',
       description: 'Create groups for trips, roommates, family expenses, or any shared costs. Invite members with a simple link or code.',
-      icon: <Users size={80} color="#059669" />,
+      icon: <Users size={80} color="#ffffff" />,
       color: '#059669',
+      bgColor: '#10b981',
     },
     {
       id: 3,
       title: 'Smart Expense Splitting',
       subtitle: 'Fair & Transparent',
       description: 'Split expenses equally or customize splits by amount, percentage, or shares. Everyone knows exactly what they owe.',
-      icon: <Calculator size={80} color="#ea580c" />,
+      icon: <Calculator size={80} color="#ffffff" />,
       color: '#ea580c',
+      bgColor: '#f97316',
     },
     {
       id: 4,
       title: 'eSewa Integration',
       subtitle: 'Seamless Payments',
       description: 'Settle up instantly with eSewa integration. Send and receive money directly through Nepal\'s most trusted digital wallet.',
-      icon: <Smartphone size={80} color="#7c3aed" />,
+      icon: <Smartphone size={80} color="#ffffff" />,
       color: '#7c3aed',
+      bgColor: '#8b5cf6',
     },
     {
       id: 5,
       title: 'Secure & Private',
       subtitle: 'Your Data is Safe',
       description: 'Bank-level security with end-to-end encryption. Your financial data is protected and never shared with third parties.',
-      icon: <Shield size={80} color="#dc2626" />,
+      icon: <Shield size={80} color="#ffffff" />,
       color: '#dc2626',
+      bgColor: '#ef4444',
     },
   ];
 
@@ -77,53 +87,97 @@ export default function WelcomeScreen() {
     // Initial fade in animation
     Animated.timing(fadeAnim, {
       toValue: 1,
-      duration: 1000,
+      duration: 800,
       easing: Easing.out(Easing.ease),
       useNativeDriver: true,
     }).start();
 
     // Auto-advance slides
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 4000);
+      if (!isSliding) {
+        goToNextSlide();
+      }
+    }, 5000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [isSliding]);
 
   useEffect(() => {
     // Slide transition animation
-    Animated.timing(slideAnim, {
+    Animated.spring(slideAnim, {
       toValue: currentSlide,
-      duration: 500,
-      easing: Easing.out(Easing.ease),
+      friction: 20,
+      tension: 70,
       useNativeDriver: true,
-    }).start();
+    }).start(() => setIsSliding(false));
   }, [currentSlide]);
 
+  const goToNextSlide = () => {
+    setIsSliding(true);
+    setCurrentSlide((prev) => (prev + 1) % slides.length);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const goToPrevSlide = () => {
+    setIsSliding(true);
+    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const handleDotPress = (index: number) => {
+    if (index !== currentSlide) {
+      setIsSliding(true);
+      setCurrentSlide(index);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
+
+  const animateButton = () => {
+    Animated.sequence([
+      Animated.timing(buttonScale, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(buttonScale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
   const handleGetStarted = async () => {
-    // Mark that user has seen welcome screen
+    animateButton();
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     await AsyncStorage.setItem('hasSeenWelcome', 'true');
     router.replace('/(auth)/signup');
   };
 
   const handleSignIn = async () => {
-    // Mark that user has seen welcome screen
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     await AsyncStorage.setItem('hasSeenWelcome', 'true');
     router.replace('/(auth)/login');
   };
 
   const renderSlide = (slide: typeof slides[0], index: number) => (
     <View key={slide.id} style={[styles.slide, { width }]}>
-      <View style={styles.slideContent}>
-        <View style={[styles.iconContainer, { backgroundColor: `${slide.color}15` }]}>
-          {slide.icon}
+      <ImageBackground
+        // source={require('../../assets/images/wave-bg.png')}
+        style={[styles.slideBackground, { backgroundColor: slide.bgColor }]}
+        imageStyle={styles.slideBackgroundImage}
+      >
+        <View style={styles.slideContent}>
+          <View style={[styles.iconContainer, { backgroundColor: `${slide.color}40` }]}>
+            {slide.icon}
+          </View>
+          <Text style={styles.slideTitle}>{slide.title}</Text>
+          <Text style={[styles.slideSubtitle, { color: '#ffffff' }]}>
+            {slide.subtitle}
+          </Text>
+          <Text style={styles.slideDescription}>{slide.description}</Text>
         </View>
-        <Text style={styles.slideTitle}>{slide.title}</Text>
-        <Text style={[styles.slideSubtitle, { color: slide.color }]}>
-          {slide.subtitle}
-        </Text>
-        <Text style={styles.slideDescription}>{slide.description}</Text>
-      </View>
+      </ImageBackground>
     </View>
   );
 
@@ -135,9 +189,10 @@ export default function WelcomeScreen() {
           style={[
             styles.dot,
             currentSlide === index && styles.activeDot,
-            { backgroundColor: currentSlide === index ? slides[currentSlide].color : '#d1d5db' }
+            { backgroundColor: currentSlide === index ? slides[currentSlide].color : 'rgba(255,255,255,0.5)' }
           ]}
-          onPress={() => setCurrentSlide(index)}
+          onPress={() => handleDotPress(index)}
+          activeOpacity={0.7}
         />
       ))}
     </View>
@@ -149,7 +204,7 @@ export default function WelcomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            <Text style={styles.logoEmoji}>💰</Text>
+            <Text style={styles.logoEmoji}>💸</Text>
             <Text style={styles.logoText}>SplitSaathi</Text>
           </View>
           <View style={styles.madeInNepal}>
@@ -157,7 +212,7 @@ export default function WelcomeScreen() {
           </View>
         </View>
 
-        {/* Slides */}
+        {/* Slides with navigation arrows */}
         <View style={styles.slidesContainer}>
           <Animated.View
             style={[
@@ -176,40 +231,72 @@ export default function WelcomeScreen() {
           >
             {slides.map((slide, index) => renderSlide(slide, index))}
           </Animated.View>
+          
+          {currentSlide > 0 && (
+            <TouchableOpacity 
+              style={[styles.navButton, styles.prevButton]} 
+              onPress={goToPrevSlide}
+              activeOpacity={0.7}
+            >
+              <ChevronRight size={24} color="#ffffff" style={{ transform: [{ rotate: '180deg' }] }} />
+            </TouchableOpacity>
+          )}
+          
+          {currentSlide < slides.length - 1 && (
+            <TouchableOpacity 
+              style={[styles.navButton, styles.nextButton]} 
+              onPress={goToNextSlide}
+              activeOpacity={0.7}
+            >
+              <ChevronRight size={24} color="#ffffff" />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Dots Indicator */}
         {renderDots()}
 
         {/* Features Grid */}
-        <View style={styles.featuresGrid}>
-          <View style={styles.featureItem}>
-            <DollarSign size={24} color="#059669" />
-            <Text style={styles.featureText}>Free to Use</Text>
-          </View>
-          <View style={styles.featureItem}>
-            <Star size={24} color="#f59e0b" />
-            <Text style={styles.featureText}>Highly Rated</Text>
-          </View>
-          <View style={styles.featureItem}>
-            <Shield size={24} color="#7c3aed" />
-            <Text style={styles.featureText}>Secure</Text>
-          </View>
-          <View style={styles.featureItem}>
-            <Smartphone size={24} color="#2563eb" />
-            <Text style={styles.featureText}>eSewa Ready</Text>
-          </View>
-        </View>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.featuresContainer}
+        >
+          {[
+            { icon: <DollarSign size={20} color="#059669" />, text: 'Free to Use' },
+            { icon: <Star size={20} color="#f59e0b" />, text: 'Highly Rated' },
+            { icon: <Shield size={20} color="#7c3aed" />, text: 'Secure' },
+            { icon: <Smartphone size={20} color="#2563eb" />, text: 'eSewa Ready' },
+            { icon: <Users size={20} color="#6d28d9" />, text: 'Group Support' },
+          ].map((item, index) => (
+            <View key={index} style={styles.featureItem}>
+              {item.icon}
+              <Text style={styles.featureText}>{item.text}</Text>
+            </View>
+          ))}
+        </ScrollView>
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
-          <TouchableOpacity style={styles.primaryButton} onPress={handleGetStarted}>
-            <Text style={styles.primaryButtonText}>Get Started</Text>
-            <ArrowRight size={20} color="#ffffff" />
-          </TouchableOpacity>
+          <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+            <TouchableOpacity 
+              style={[styles.primaryButton, { backgroundColor: slides[currentSlide].color }]} 
+              onPress={handleGetStarted}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.primaryButtonText}>Get Started</Text>
+              <ArrowRight size={20} color="#ffffff" />
+            </TouchableOpacity>
+          </Animated.View>
           
-          <TouchableOpacity style={styles.secondaryButton} onPress={handleSignIn}>
-            <Text style={styles.secondaryButtonText}>Already have an account? Sign In</Text>
+          <TouchableOpacity 
+            style={styles.secondaryButton} 
+            onPress={handleSignIn}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.secondaryButtonText, { color: slides[currentSlide].color }]}>
+              Already have an account? Sign In
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -234,26 +321,28 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingTop: 20,
-    paddingBottom: 30,
+    paddingBottom: 16,
   },
   logoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
   },
   logoEmoji: {
-    fontSize: 32,
+    fontSize: 28,
     marginRight: 8,
   },
   logoText: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: 24,
+    fontWeight: '800',
     color: '#111827',
+    fontFamily: 'Inter_700Bold',
   },
   madeInNepal: {
     backgroundColor: '#fef2f2',
@@ -267,11 +356,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#dc2626',
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   slidesContainer: {
-    height: 320,
+    height: height * 0.45,
     overflow: 'hidden',
-    marginBottom: 20,
+    marginBottom: 16,
+    borderRadius: 24,
+    position: 'relative',
+  },
+  slideBackground: {
+    flex: 1,
+    padding: 20,
+    justifyContent: 'center',
+  },
+  slideBackgroundImage: {
+    opacity: 0.15,
+    resizeMode: 'cover',
   },
   slidesWrapper: {
     flexDirection: 'row',
@@ -280,101 +381,131 @@ const styles = StyleSheet.create({
   slide: {
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    height: '100%',
   },
   slideContent: {
     alignItems: 'center',
     maxWidth: 300,
+    padding: 20,
   },
   iconContainer: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.2,
     shadowRadius: 12,
     elevation: 8,
   },
   slideTitle: {
     fontSize: 24,
-    fontWeight: '700',
-    color: '#111827',
+    fontWeight: '800',
+    color: '#ffffff',
     textAlign: 'center',
     marginBottom: 8,
+    fontFamily: 'Inter_800ExtraBold',
+    textShadowColor: 'rgba(0,0,0,0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   slideSubtitle: {
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
     marginBottom: 16,
+    fontFamily: 'Inter_600SemiBold',
+    textShadowColor: 'rgba(0,0,0,0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   slideDescription: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.9)',
     textAlign: 'center',
-    lineHeight: 22,
-    paddingHorizontal: 10,
+    lineHeight: 24,
+    fontFamily: 'Inter_400Regular',
+    textShadowColor: 'rgba(0,0,0,0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   dotsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 24,
     gap: 8,
   },
   dot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#d1d5db',
   },
   activeDot: {
     width: 24,
     height: 8,
     borderRadius: 4,
   },
-  featuresGrid: {
+  navButton: {
+    position: 'absolute',
+    top: '50%',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  prevButton: {
+    left: 16,
+    transform: [{ translateY: -22 }],
+  },
+  nextButton: {
+    right: 16,
+    transform: [{ translateY: -22 }],
+  },
+  featuresContainer: {
+    paddingHorizontal: 8,
+    marginBottom: 24,
+  },
+  featureItem: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    alignItems: 'center',
     backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 30,
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginRight: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
-    elevation: 4,
-  },
-  featureItem: {
-    alignItems: 'center',
-    flex: 1,
+    elevation: 2,
   },
   featureText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: '#374151',
-    marginTop: 8,
-    textAlign: 'center',
+    marginLeft: 8,
+    fontFamily: 'Inter_600SemiBold',
   },
   actionButtons: {
     marginBottom: 20,
   },
   primaryButton: {
-    backgroundColor: '#4f46e5',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 16,
     borderRadius: 16,
     marginBottom: 12,
-    shadowColor: '#4f46e5',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.2,
     shadowRadius: 12,
     elevation: 8,
   },
@@ -383,6 +514,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#ffffff',
     marginRight: 8,
+    fontFamily: 'Inter_600SemiBold',
   },
   secondaryButton: {
     alignItems: 'center',
@@ -390,8 +522,8 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     fontSize: 14,
-    color: '#4f46e5',
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   footer: {
     alignItems: 'center',
@@ -402,10 +534,12 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     textAlign: 'center',
     marginBottom: 4,
+    fontFamily: 'Inter_500Medium',
   },
   footerSubtext: {
     fontSize: 12,
     color: '#9ca3af',
     textAlign: 'center',
+    fontFamily: 'Inter_400Regular',
   },
 });

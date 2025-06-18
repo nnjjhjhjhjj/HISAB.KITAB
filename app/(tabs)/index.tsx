@@ -273,7 +273,7 @@ export default function HomeScreen() {
               <Text style={styles.actionSubtitle}>{groups.length} active</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            {/* <TouchableOpacity 
               style={[styles.actionCard, { backgroundColor: '#ECFDF5' }]}
               onPress={() => router.push('/add-group')}
             >
@@ -282,7 +282,7 @@ export default function HomeScreen() {
               </View>
               <Text style={styles.actionTitle}>New Group</Text>
               <Text style={styles.actionSubtitle}>Start splitting</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             <TouchableOpacity 
               style={[styles.actionCard, { backgroundColor: '#FFFBEB' }]}
@@ -291,7 +291,7 @@ export default function HomeScreen() {
               <View style={[styles.actionIcon, { backgroundColor: '#F59E0B' }]}>
                 <Calculator size={20} color="#FFFFFF" />
               </View>
-              <Text style={styles.actionTitle}>Advanced Split</Text>
+              <Text style={styles.actionTitle}> Split money</Text>
               <Text style={styles.actionSubtitle}>Custom splits</Text>
             </TouchableOpacity>
           </ScrollView>
