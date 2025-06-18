@@ -102,8 +102,8 @@ export default function AddGroupScreen() {
   };
 
   const generateShareLink = (groupId: string) => {
-    // In a real app, this would come from your backend
-    return `https://yourapp.com/group/join?groupId=${groupId}`;
+    // Use Railway domain for the share link
+    return `https://splitsaathi.up.railway.app/join/${groupId}`;
   };
 
   const handleCopyLink = async () => {
@@ -118,7 +118,7 @@ export default function AddGroupScreen() {
     
     try {
       await Share.share({
-        message: `Join my expense group "${groupName}" on SplitEase: ${shareableLink}`,
+        message: `Join my expense group "${groupName}" on SplitSaathi: ${shareableLink}`,
         title: 'Join my Expense Group'
       });
     } catch (error) {
@@ -170,7 +170,7 @@ export default function AddGroupScreen() {
         members: validMembers,
       });
 
-      // Generate shareable link
+      // Generate shareable link with Railway domain
       const link = generateShareLink(groupId);
       setShareableLink(link);
 

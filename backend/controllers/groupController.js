@@ -32,8 +32,8 @@ exports.createGroup = async (req, res) => {
 
     const savedGroup = await group.save();
 
-    // Generate invite link with proper domain
-    const APP_DOMAIN = process.env.APP_DOMAIN || 'hisabkitab.app';
+    // Generate invite link with Railway domain
+    const APP_DOMAIN = process.env.APP_DOMAIN || 'splitsaathi.up.railway.app';
     const inviteLink = `https://${APP_DOMAIN}/join/${savedGroup._id}`;
 
     res.status(201).json({
@@ -222,8 +222,8 @@ exports.getGroups = async (req, res) => {
             });
           });
 
-          // Generate invite link with proper domain
-          const APP_DOMAIN = process.env.APP_DOMAIN || 'hisabkitab.app';
+          // Generate invite link with Railway domain
+          const APP_DOMAIN = process.env.APP_DOMAIN || 'splitsaathi.up.railway.app';
           const inviteLink = `https://${APP_DOMAIN}/join/${group._id}`;
 
           return {
@@ -247,7 +247,7 @@ exports.getGroups = async (req, res) => {
             totalExpenses: 0,
             balances: {},
             inviteCode: group.inviteCode,
-            inviteLink: `https://hisabkitab.app/join/${group._id}`,
+            inviteLink: `https://splitsaathi.up.railway.app/join/${group._id}`,
             createdAt: group.createdAt,
           };
         }
@@ -306,8 +306,8 @@ exports.getGroupById = async (req, res) => {
       });
     });
 
-    // Generate invite link with proper domain
-    const APP_DOMAIN = process.env.APP_DOMAIN || 'hisabkitab.app';
+    // Generate invite link with Railway domain
+    const APP_DOMAIN = process.env.APP_DOMAIN || 'splitsaathi.up.railway.app';
     const inviteLink = `https://${APP_DOMAIN}/join/${group._id}`;
 
     // Transform group to match frontend interface

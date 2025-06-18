@@ -26,16 +26,16 @@ interface ShareGroupModalProps {
 export default function ShareGroupModal({ visible, onClose, group }: ShareGroupModalProps) {
   const [customMessage, setCustomMessage] = useState('');
   
-  // Use a proper app domain - you should replace this with your actual domain
-  const APP_DOMAIN = 'hisabkitab.app'; // Replace with your actual domain
+  // Use Railway domain for the app
+  const APP_DOMAIN = 'splitsaathi.up.railway.app';
   const shareUrl = group.inviteLink || `https://${APP_DOMAIN}/join/${group.id}`;
   const inviteCode = group.inviteCode || 'N/A';
-  const defaultMessage = `Join "${group.name}" on Hisab Kitab to split expenses together! 
+  const defaultMessage = `Join "${group.name}" on SplitSaathi to split expenses together! 
 
 Use invite code: ${inviteCode} 
 Or click: ${shareUrl}
 
-Download Hisab Kitab from your app store to get started!`;
+Download SplitSaathi from your app store to get started!`;
 
   const handleCopyLink = async () => {
     try {
@@ -61,7 +61,7 @@ Download Hisab Kitab from your app store to get started!`;
       await Share.share({
         message: message,
         url: shareUrl,
-        title: `Join ${group.name} on Hisab Kitab`,
+        title: `Join ${group.name} on SplitSaathi`,
       });
     } catch (error) {
       Alert.alert('Error', 'Failed to share');
@@ -69,7 +69,7 @@ Download Hisab Kitab from your app store to get started!`;
   };
 
   const handleEmailShare = () => {
-    const subject = `Join "${group.name}" on Hisab Kitab`;
+    const subject = `Join "${group.name}" on SplitSaathi`;
     const body = customMessage.trim() || defaultMessage;
     const emailUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     
@@ -188,7 +188,7 @@ Download Hisab Kitab from your app store to get started!`;
           <View style={styles.instructionsCard}>
             <Text style={styles.instructionsTitle}>How to Join</Text>
             <Text style={styles.instructionsText}>
-              1. Download Hisab Kitab app from your app store{'\n'}
+              1. Open SplitSaathi app or visit {APP_DOMAIN}{'\n'}
               2. Create an account or sign in{'\n'}
               3. Tap "Join Group" and enter the invite code{'\n'}
               4. Start splitting expenses together!

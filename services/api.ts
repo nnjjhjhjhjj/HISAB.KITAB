@@ -2,8 +2,8 @@ import axios from 'axios';
 import { Group, Expense, User, ApiResponse } from '@/types';
 import { GoogleUser } from './googleAuth';
 
-// API Configuration - Updated to match the backend port
-const API_BASE_URL  = 'http://192.168.1.85:5051';
+// API Configuration - Updated to use Railway domain
+const API_BASE_URL = 'https://splitsaathi.up.railway.app';
 
 // Create axios instance
 const api = axios.create({
