@@ -14,11 +14,12 @@ import {
   X,
   Share2,
   Copy,
-  Link as LinkIcon,
   QrCode,
   Mail,
   MessageCircle,
 } from 'lucide-react-native';
+import Constants from 'expo-constants';
+import * as Clipboard from 'expo-clipboard';
 
 interface Group {
   id: string;
@@ -35,11 +36,12 @@ interface ShareGroupModalProps {
 
 export default function ShareGroupModal({ visible, onClose, group }: ShareGroupModalProps) {
   const [customMessage, setCustomMessage] = useState('');
-  
-  // Use the Railway domain for share links
-  const APP_DOMAIN = 'splitsaathi.up.railway.app';
+
+  // Dynamically fetch domain from .env via app.config.js
+  const { APP_DOMAIN } = Constants.expoConfig?.extra || {};
   const shareUrl = group.inviteLink || `https://${APP_DOMAIN}/join/${group.id}`;
   const inviteCode = group.inviteCode || 'N/A';
+
   const defaultMessage = `Join "${group.name}" on SplitSaathi to split expenses together! 
 
 Use invite code: ${inviteCode}
@@ -49,14 +51,7 @@ Download SplitSaathi from your app store to get started!`;
 
   const handleCopy = async (text: string, label: string) => {
     try {
-      // For web, use the Clipboard API
-      if (typeof navigator !== 'undefined' && navigator.clipboard) {
-        await navigator.clipboard.writeText(text);
-      } else {
-        // Fallback for React Native
-        const Clipboard = require('@react-native-clipboard/clipboard').default;
-        Clipboard.setString(text);
-      }
+      await Clipboard.setStringAsync(text);
       Alert.alert('Copied!', `${label} copied to clipboard`);
     } catch (error) {
       Alert.alert('Error', 'Failed to copy to clipboard');
@@ -67,7 +62,7 @@ Download SplitSaathi from your app store to get started!`;
     try {
       const message = customMessage.trim() || defaultMessage;
       await Share.share({
-        message: message,
+        message,
         url: shareUrl,
         title: `Join ${group.name} on SplitSaathi`,
       });
@@ -80,13 +75,14 @@ Download SplitSaathi from your app store to get started!`;
     const subject = `Join "${group.name}" on SplitSaathi`;
     const body = customMessage.trim() || defaultMessage;
     const emailUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    
     Alert.alert('Email Share', 'This would open your email app with the invite message');
+    // You could integrate Linking.openURL(emailUrl) here for real email functionality
   };
 
   const handleSMS = () => {
     const message = encodeURIComponent(customMessage || defaultMessage);
     Alert.alert('SMS Share', 'This would open your SMS app with the invite message');
+    // You could integrate SMS app launch here with Linking.openURL('sms:?body=' + message)
   };
 
   return (
@@ -158,10 +154,7 @@ Download SplitSaathi from your app store to get started!`;
             <Text style={styles.shareOptionText}>SMS</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.shareOption} 
-            onPress={() => Alert.alert('QR Code', 'QR code sharing would be implemented here')}
-          >
+          <TouchableOpacity style={styles.shareOption} onPress={() => Alert.alert('QR Code', 'QR code sharing would be implemented here')}>
             <View style={styles.shareIconContainer}>
               <QrCode size={24} color="#7c3aed" />
             </View>
@@ -169,11 +162,10 @@ Download SplitSaathi from your app store to get started!`;
           </TouchableOpacity>
         </View>
 
-        {/* Instructions */}
         <View style={styles.instructionsCard}>
           <Text style={styles.instructionsTitle}>How to Join</Text>
           <Text style={styles.instructionsText}>
-            1. Visit splitsaathi.up.railway.app or download the SplitSaathi app{'\n'}
+            1. Visit {APP_DOMAIN} or download the SplitSaathi app{'\n'}
             2. Create an account or sign in{'\n'}
             3. Tap "Join Group" and enter the invite code{'\n'}
             4. Start splitting expenses together!

@@ -13,61 +13,45 @@ export default function IndexScreen() {
 
   const checkAuthStatus = async () => {
     try {
-      // Check if this is the first time opening the app
       const hasSeenWelcome = await AsyncStorage.getItem('hasSeenWelcome');
-      
       if (!hasSeenWelcome) {
-        // First time user - show welcome screen
         router.replace('/welcome');
         return;
       }
 
-      // Check if user has a stored auth token
       const token = await AsyncStorage.getItem('authToken');
-      
       if (token) {
-        // Set the token in the API service
         apiService.setAuthToken(token);
-        
-        // Verify the token is still valid by trying to get user profile
         try {
           await apiService.getUserProfile();
-          // Token is valid, redirect to main app
           router.replace('/(tabs)');
           return;
         } catch (error) {
-          // Token is invalid, clear it
           await AsyncStorage.removeItem('authToken');
           apiService.clearAuthToken();
         }
       }
-      
-      // No valid token, redirect to login
+
       router.replace('/(auth)/login');
     } catch (error) {
       console.error('Error checking auth status:', error);
-      // On error, redirect to welcome screen for safety
       router.replace('/welcome');
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (isLoading) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.logoContainer}>
-          <Text style={styles.logoEmoji}>💰</Text>
-          <Text style={styles.logoText}>SplitSaathi</Text>
-        </View>
-        <ActivityIndicator size="large" color="#4f46e5" />
-        <Text style={styles.text}>Loading SplitSaathi...</Text>
-        <Text style={styles.subtext}>Made with ❤️ in Nepal 🇳🇵</Text>
+  return (
+    <View style={styles.container}>
+      <View style={styles.logoContainer}>
+        <Text style={styles.logoEmoji}>💰</Text>
+        <Text style={styles.logoText}>SplitSaathi</Text>
       </View>
-    );
-  }
-
-  return null;
+      <ActivityIndicator size="large" color="#4f46e5" />
+      <Text style={styles.text}>Loading SplitSaathi...</Text>
+      <Text style={styles.subtext}>Made with ❤️ in Nepal 🇳🇵</Text>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
