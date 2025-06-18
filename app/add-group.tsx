@@ -10,15 +10,19 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Share,
+  Clipboard
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Plus, X, Users, ArrowLeft, Play } from 'lucide-react-native';
+import { Plus, X, Users, ArrowLeft, Play, Link, Share2 } from 'lucide-react-native';
 
 const apiService = {
   createGroup: async (groupData: any) => {
-    // Simulate API call
-    return new Promise(resolve => setTimeout(resolve, 1500));
+    // Simulate API call and return a mock group ID
+    return new Promise<string>(resolve => 
+      setTimeout(() => resolve(`GRP_${Math.random().toString(36).substring(2, 10)}`), 1500)
+    );
   }
 };
 
@@ -68,6 +72,7 @@ export default function AddGroupScreen() {
   const [showAdModal, setShowAdModal] = useState(false);
   const [canCreateGroup, setCanCreateGroup] = useState(true);
   const [remainingGroups, setRemainingGroups] = useState(0);
+  const [shareableLink, setShareableLink] = useState<string | null>(null);
 
   useEffect(() => {
     const checkLimits = async () => {
@@ -96,6 +101,39 @@ export default function AddGroupScreen() {
     setMembers(newMembers);
   };
 
+  const generateShareLink = (groupId: string) => {
+    // In a real app, this would come from your backend
+    return `https://yourapp.com/group/join?groupId=${groupId}`;
+  };
+
+  const handleCopyLink = async () => {
+    if (!shareableLink) return;
+    
+    await Clipboard.setString(shareableLink);
+    Alert.alert('Copied!', 'Group link copied to clipboard');
+  };
+
+  const handleShareLink = async () => {
+    if (!shareableLink) return;
+    
+    try {
+      await Share.share({
+        message: `Join my expense group "${groupName}" on SplitEase: ${shareableLink}`,
+        title: 'Join my Expense Group'
+      });
+    } catch (error) {
+      Alert.alert('Error', 'Failed to share group link');
+      console.error('Sharing failed:', error);
+    }
+  };
+
+  const resetForm = () => {
+    setGroupName('');
+    setDescription('');
+    setMembers(['']);
+    setShareableLink(null);
+  };
+
   const handleCreateGroup = async () => {
     // Check limits first
     const { canAdd, needsAd } = await limitService.canCreateGroup();
@@ -114,42 +152,32 @@ export default function AddGroupScreen() {
       }
     }
 
-    // Validation
+    // Validation - only group name is required
     if (!groupName.trim()) {
       Alert.alert('Error', 'Please enter a group name');
       return;
     }
 
-    const validMembers = members.filter(member => member.trim() !== '');
-    if (validMembers.length === 0) {
-      Alert.alert('Error', 'Please add at least one member');
-      return;
-    }
-
     setLoading(true);
     try {
-      await apiService.createGroup({
+      // Filter out empty member names
+      const validMembers = members.filter(member => member.trim() !== '');
+      
+      // Create group and get group ID
+      const groupId = await apiService.createGroup({
         name: groupName.trim(),
         description: description.trim(),
         members: validMembers,
       });
 
+      // Generate shareable link
+      const link = generateShareLink(groupId);
+      setShareableLink(link);
+
       // Increment group count
       await limitService.incrementGroups();
 
-      Alert.alert('Success', 'Group created successfully!', [
-        {
-          text: 'OK',
-          onPress: () => {
-            // Reset form
-            setGroupName('');
-            setDescription('');
-            setMembers(['']);
-            // Navigate back
-            router.back();
-          },
-        },
-      ]);
+      Alert.alert('Success', 'Group created successfully!');
     } catch (error) {
       Alert.alert('Error', 'Failed to create group. Please try again.');
       console.error('Error creating group:', error);
@@ -171,20 +199,28 @@ export default function AddGroupScreen() {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => router.back()}
+          onPress={() => {
+            if (shareableLink) {
+              resetForm();
+            } else {
+              router.back();
+            }
+          }}
         >
           <ArrowLeft size={24} color="#ffffff" />
         </TouchableOpacity>
         <View style={styles.headerContent}>
-          <Text style={styles.title}>Create New Group</Text>
+          <Text style={styles.title}>
+            {shareableLink ? 'Group Created' : 'Create New Group'}
+          </Text>
           <Text style={styles.subtitle}>
-            {remainingGroups} groups remaining today
+            {shareableLink ? 'Share with your group members' : `${remainingGroups} groups remaining today`}
           </Text>
         </View>
       </View>
 
       {/* Limit Warning */}
-      {!canCreateGroup && (
+      {!canCreateGroup && !shareableLink && (
         <View style={styles.limitWarning}>
           <Text style={styles.limitWarningText}>
             Daily limit reached! Watch an ad to create 1 more group.
@@ -199,122 +235,184 @@ export default function AddGroupScreen() {
         </View>
       )}
 
-      <ScrollView 
-        style={styles.form} 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.formContent}
-      >
-        <View style={styles.card}>
-          <Text style={styles.label}>Group Name *</Text>
-          <TextInput
-            style={styles.input}
-            value={groupName}
-            onChangeText={setGroupName}
-            placeholder="e.g., Trip to Europe, Roommate Expenses"
-            placeholderTextColor="#94a3b8"
-          />
+      {shareableLink ? (
+        <View style={styles.linkContainer}>
+          <View style={styles.linkCard}>
+            <View style={styles.linkHeader}>
+              <Link size={24} color="#4f46e5" />
+              <Text style={styles.linkTitle}>Group Invite Link</Text>
+            </View>
+            <Text style={styles.linkText} selectable={true}>
+              {shareableLink}
+            </Text>
+            
+            <View style={styles.linkButtons}>
+              <TouchableOpacity 
+                style={styles.linkButton}
+                onPress={handleCopyLink}
+              >
+                <Link size={18} color="#4f46e5" />
+                <Text style={styles.linkButtonText}>Copy Link</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.linkButton, styles.shareButton]}
+                onPress={handleShareLink}
+              >
+                <Share2 size={18} color="#ffffff" />
+                <Text style={[styles.linkButtonText, styles.shareButtonText]}>Share</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          
+          <View style={styles.nextSteps}>
+            <Text style={styles.nextStepsTitle}>Next Steps</Text>
+            <View style={styles.step}>
+              <View style={styles.stepNumber}>
+                <Text style={styles.stepNumberText}>1</Text>
+              </View>
+              <Text style={styles.stepText}>Share this link with your group members</Text>
+            </View>
+            <View style={styles.step}>
+              <View style={styles.stepNumber}>
+                <Text style={styles.stepNumberText}>2</Text>
+              </View>
+              <Text style={styles.stepText}>Members join by clicking the link</Text>
+            </View>
+            <View style={styles.step}>
+              <View style={styles.stepNumber}>
+                <Text style={styles.stepNumberText}>3</Text>
+              </View>
+              <Text style={styles.stepText}>Start adding expenses to your group</Text>
+            </View>
+          </View>
         </View>
-
-        <View style={styles.card}>
-          <Text style={styles.label}>Description</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            value={description}
-            onChangeText={setDescription}
-            placeholder="Optional description for this group"
-            placeholderTextColor="#94a3b8"
-            multiline
-            numberOfLines={3}
-            maxLength={200}
-          />
-        </View>
-
-        <View style={styles.card}>
-          <View style={styles.membersHeader}>
-            <Text style={styles.label}>Members *</Text>
-            <TouchableOpacity style={styles.addButton} onPress={addMember}>
-              <Plus size={16} color="#4f46e5" />
-              <Text style={styles.addButtonText}>Add Member</Text>
-            </TouchableOpacity>
+      ) : (
+        <ScrollView 
+          style={styles.form} 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.formContent}
+        >
+          <View style={styles.card}>
+            <Text style={styles.label}>Group Name *</Text>
+            <TextInput
+              style={styles.input}
+              value={groupName}
+              onChangeText={setGroupName}
+              placeholder="e.g., Trip to Europe, Roommate Expenses"
+              placeholderTextColor="#94a3b8"
+            />
           </View>
 
-          {members.map((member, index) => (
-            <View key={index} style={styles.memberRow}>
-              <View style={styles.memberIndex}>
-                <Text style={styles.memberIndexText}>{index + 1}</Text>
+          <View style={styles.card}>
+            <Text style={styles.label}>Description</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Optional description for this group"
+              placeholderTextColor="#94a3b8"
+              multiline
+              numberOfLines={3}
+              maxLength={200}
+            />
+          </View>
+
+          <View style={styles.card}>
+            <View style={styles.membersHeader}>
+              <Text style={styles.label}>Members</Text>
+              <TouchableOpacity style={styles.addButton} onPress={addMember}>
+                <Plus size={16} color="#4f46e5" />
+                <Text style={styles.addButtonText}>Add Member</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.optionalHint}>
+              Optional - You can add members now or later
+            </Text>
+
+            {members.map((member, index) => (
+              <View key={index} style={styles.memberRow}>
+                <View style={styles.memberIndex}>
+                  <Text style={styles.memberIndexText}>{index + 1}</Text>
+                </View>
+                <TextInput
+                  style={[styles.input, styles.memberInput]}
+                  value={member}
+                  onChangeText={(value) => updateMember(index, value)}
+                  placeholder={`Member ${index + 1} name`}
+                  placeholderTextColor="#94a3b8"
+                  maxLength={30}
+                />
+                {members.length > 1 && (
+                  <TouchableOpacity
+                    style={styles.removeButton}
+                    onPress={() => removeMember(index)}
+                  >
+                    <X size={16} color="#ef4444" />
+                  </TouchableOpacity>
+                )}
               </View>
-              <TextInput
-                style={[styles.input, styles.memberInput]}
-                value={member}
-                onChangeText={(value) => updateMember(index, value)}
-                placeholder={`Member ${index + 1} name`}
-                placeholderTextColor="#94a3b8"
-                maxLength={30}
-              />
-              {members.length > 1 && (
-                <TouchableOpacity
-                  style={styles.removeButton}
-                  onPress={() => removeMember(index)}
-                >
-                  <X size={16} color="#ef4444" />
-                </TouchableOpacity>
+            ))}
+          </View>
+
+          <View style={styles.previewSection}>
+            <Text style={styles.previewTitle}>Group Preview</Text>
+            <View style={styles.previewCard}>
+              <View style={styles.previewHeader}>
+                <Users size={24} color="#4f46e5" />
+                <Text style={styles.previewName}>{groupName || 'Group Name'}</Text>
+              </View>
+              {description && (
+                <Text style={styles.previewDescription}>{description}</Text>
+              )}
+              {members.some(m => m.trim()) && (
+                <View style={styles.previewMembers}>
+                  <Text style={styles.previewMembersLabel}>
+                    {members.filter(m => m.trim()).length} member(s):
+                  </Text>
+                  <View style={styles.memberTags}>
+                    {members.filter(m => m.trim()).map((member, i) => (
+                      <View key={i} style={styles.memberTag}>
+                        <Text style={styles.memberTagText}>{member}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
               )}
             </View>
-          ))}
-        </View>
-
-        <View style={styles.previewSection}>
-          <Text style={styles.previewTitle}>Group Preview</Text>
-          <View style={styles.previewCard}>
-            <View style={styles.previewHeader}>
-              <Users size={24} color="#4f46e5" />
-              <Text style={styles.previewName}>{groupName || 'Group Name'}</Text>
-            </View>
-            {description && (
-              <Text style={styles.previewDescription}>{description}</Text>
-            )}
-            <View style={styles.previewMembers}>
-              <Text style={styles.previewMembersLabel}>
-                {members.filter(m => m.trim()).length} member(s):
-              </Text>
-              <View style={styles.memberTags}>
-                {members.filter(m => m.trim()).map((member, i) => (
-                  <View key={i} style={styles.memberTag}>
-                    <Text style={styles.memberTagText}>{member}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      )}
 
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
-        style={styles.footerContainer}
-      >
-        <View style={styles.footer}>
-          <TouchableOpacity
-            style={[
-              styles.createButton, 
-              (loading || !canCreateGroup) && styles.createButtonDisabled
-            ]}
-            onPress={handleCreateGroup}
-            disabled={loading || !canCreateGroup}
-          >
-            {loading ? (
-              <ActivityIndicator color="#ffffff" size="small" />
-            ) : (
-              <>
-                <Plus size={20} color="#ffffff" />
-                <Text style={styles.createButtonText}>
-                  {canCreateGroup ? 'Create Group' : 'Watch Ad to Continue'}
-                </Text>
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
+      {!shareableLink && (
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+          style={styles.footerContainer}
+        >
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={[
+                styles.createButton, 
+                (loading || !canCreateGroup) && styles.createButtonDisabled
+              ]}
+              onPress={handleCreateGroup}
+              disabled={loading || !canCreateGroup}
+            >
+              {loading ? (
+                <ActivityIndicator color="#ffffff" size="small" />
+              ) : (
+                <>
+                  <Plus size={20} color="#ffffff" />
+                  <Text style={styles.createButtonText}>
+                    {canCreateGroup ? 'Create Group' : 'Watch Ad to Continue'}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      )}
 
       <AdModal
         visible={showAdModal}
@@ -422,6 +520,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1e293b',
     marginBottom: 12,
+  },
+  optionalHint: {
+    fontSize: 13,
+    color: '#64748b',
+    marginBottom: 12,
+    fontStyle: 'italic',
   },
   input: {
     backgroundColor: '#f8fafc',
@@ -668,5 +772,111 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: '600',
     fontSize: 15,
+  },
+  // Link sharing styles
+  linkContainer: {
+    flex: 1,
+    padding: 20,
+  },
+  linkCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  linkHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  linkTitle: {
+    marginLeft: 12,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1e293b',
+  },
+  linkText: {
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: '#0f172a',
+    marginBottom: 20,
+  },
+  linkButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  linkButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#eef2ff',
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e0e7ff',
+  },
+  shareButton: {
+    backgroundColor: '#4f46e5',
+    borderColor: '#4f46e5',
+  },
+  linkButtonText: {
+    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#4f46e5',
+  },
+  shareButtonText: {
+    color: '#ffffff',
+  },
+  nextSteps: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  nextStepsTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1e293b',
+    marginBottom: 16,
+  },
+  step: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  stepNumber: {
+    backgroundColor: '#e0e7ff',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  stepNumberText: {
+    color: '#4f46e5',
+    fontWeight: '700',
+  },
+  stepText: {
+    flex: 1,
+    fontSize: 15,
+    color: '#334155',
+    lineHeight: 22,
   },
 });

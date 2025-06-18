@@ -12,9 +12,9 @@ const GOOGLE_CLIENT_ID = {
   android: '1080592315622-8dcon4ij4b8ioj5rmja8sgpd3qb9hh74.apps.googleusercontent.com',
 };
 
+// ✅ Use Expo proxy for development and Expo Go
 const redirectUri = AuthSession.makeRedirectUri({
-  scheme: 'myapp',
-  path: 'auth',
+  useProxy: true,
 });
 
 const discovery = {
@@ -51,7 +51,6 @@ export const googleAuthService = {
       scopes: ['openid', 'profile', 'email'],
       responseType: AuthSession.ResponseType.Code,
       redirectUri,
-      additionalParameters: {},
       extraParams: {
         access_type: 'offline',
       },
@@ -62,7 +61,7 @@ export const googleAuthService = {
   async signInWithGoogle(): Promise<{ success: boolean; user?: GoogleUser; error?: string }> {
     try {
       const request = this.createAuthRequest();
-      const result = await request.promptAsync(discovery);
+      const result = await request.promptAsync(discovery, { useProxy: true });
 
       if (result.type === 'success') {
         // Exchange authorization code for access token
@@ -71,7 +70,7 @@ export const googleAuthService = {
             clientId: this.getClientId(),
             code: result.params.code,
             extraParams: {
-              code_verifier: request.codeVerifier,
+              code_verifier: request.codeVerifier ?? (() => { throw new Error('codeVerifier is undefined'); })(),
             },
             redirectUri,
           },
@@ -79,7 +78,6 @@ export const googleAuthService = {
         );
 
         if (tokenResult.accessToken) {
-          // Fetch user info from Google
           const userInfo = await this.fetchUserInfo(tokenResult.accessToken);
           return { success: true, user: userInfo };
         } else {
