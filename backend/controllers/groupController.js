@@ -32,8 +32,9 @@ exports.createGroup = async (req, res) => {
 
     const savedGroup = await group.save();
 
-    // Generate invite link
-    const inviteLink = `https://myapp.com/join/${savedGroup._id}`;
+    // Generate invite link with proper domain
+    const APP_DOMAIN = process.env.APP_DOMAIN || 'hisabkitab.app';
+    const inviteLink = `https://${APP_DOMAIN}/join/${savedGroup._id}`;
 
     res.status(201).json({
       success: true,
@@ -221,8 +222,9 @@ exports.getGroups = async (req, res) => {
             });
           });
 
-          // Generate invite link
-          const inviteLink = `https://myapp.com/join/${group._id}`;
+          // Generate invite link with proper domain
+          const APP_DOMAIN = process.env.APP_DOMAIN || 'hisabkitab.app';
+          const inviteLink = `https://${APP_DOMAIN}/join/${group._id}`;
 
           return {
             id: group._id,
@@ -245,7 +247,7 @@ exports.getGroups = async (req, res) => {
             totalExpenses: 0,
             balances: {},
             inviteCode: group.inviteCode,
-            inviteLink: `https://myapp.com/join/${group._id}`,
+            inviteLink: `https://hisabkitab.app/join/${group._id}`,
             createdAt: group.createdAt,
           };
         }
@@ -304,8 +306,9 @@ exports.getGroupById = async (req, res) => {
       });
     });
 
-    // Generate invite link
-    const inviteLink = `https://myapp.com/join/${group._id}`;
+    // Generate invite link with proper domain
+    const APP_DOMAIN = process.env.APP_DOMAIN || 'hisabkitab.app';
+    const inviteLink = `https://${APP_DOMAIN}/join/${group._id}`;
 
     // Transform group to match frontend interface
     const transformedGroup = {
