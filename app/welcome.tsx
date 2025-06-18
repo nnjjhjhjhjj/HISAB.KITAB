@@ -5,13 +5,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Image,
   Animated,
   Easing,
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { 
   ArrowRight, 
   Users, 
@@ -23,7 +23,7 @@ import {
   Heart
 } from 'lucide-react-native';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 export default function WelcomeScreen() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -100,11 +100,15 @@ export default function WelcomeScreen() {
     }).start();
   }, [currentSlide]);
 
-  const handleGetStarted = () => {
+  const handleGetStarted = async () => {
+    // Mark that user has seen welcome screen
+    await AsyncStorage.setItem('hasSeenWelcome', 'true');
     router.replace('/(auth)/signup');
   };
 
-  const handleSignIn = () => {
+  const handleSignIn = async () => {
+    // Mark that user has seen welcome screen
+    await AsyncStorage.setItem('hasSeenWelcome', 'true');
     router.replace('/(auth)/login');
   };
 
