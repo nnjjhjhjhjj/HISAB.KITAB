@@ -8,10 +8,16 @@ import {
   RefreshControl,
   ActivityIndicator,
   Alert,
+  Image,
+  Animated,
+  Easing
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Plus, TrendingUp, TrendingDown, DollarSign, Users, Calendar, ArrowUpRight, ArrowDownRight, CircleAlert as AlertCircle, ChartBar as BarChart3, Calculator } from 'lucide-react-native';
+import { 
+  Plus, TrendingUp, TrendingDown, DollarSign, Users, Calendar, 
+  ArrowUpRight, ArrowDownRight, AlertCircle, BarChart3, Calculator 
+} from 'lucide-react-native';
 import { Group, Expense } from '@/types';
 import { apiService } from '@/services/api';
 import { limitService } from '@/services/limitService';
@@ -26,19 +32,17 @@ export default function HomeScreen() {
     transactions: { used: 0, total: 5 },
     groups: { used: 0, total: 3 },
   });
+  const fadeAnim = useState(new Animated.Value(0))[0];
 
   const fetchData = async () => {
     try {
       setError(null);
-      console.log('Fetching dashboard data...');
       
       const groupsData = await apiService.getGroups();
-      console.log('Groups fetched:', groupsData.length);
       setGroups(groupsData);
       
-      // Get recent expenses from all groups
       const allExpenses: Expense[] = [];
-      for (const group of groupsData.slice(0, 5)) { // Limit to first 5 groups for performance
+      for (const group of groupsData.slice(0, 5)) {
         try {
           const expenses = await apiService.getGroupExpenses(group.id);
           allExpenses.push(...expenses);
@@ -47,17 +51,22 @@ export default function HomeScreen() {
         }
       }
       
-      // Sort by date and take the 5 most recent
       const sortedExpenses = allExpenses
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .slice(0, 5);
       
-      console.log('Recent expenses fetched:', sortedExpenses.length);
       setRecentExpenses(sortedExpenses);
 
-      // Get usage stats
       const stats = await limitService.getUsageStats();
       setUsageStats(stats);
+      
+      // Fade in animation
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }).start();
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       setError('Failed to load dashboard data. Please try again.');
@@ -108,7 +117,7 @@ export default function HomeScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#2563eb" />
+          <ActivityIndicator size="large" color="#4A90E2" />
           <Text style={styles.loadingText}>Loading your dashboard...</Text>
         </View>
       </SafeAreaView>
@@ -119,7 +128,7 @@ export default function HomeScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
-          <AlertCircle size={64} color="#dc2626" />
+          <AlertCircle size={64} color="#FF6B6B" />
           <Text style={styles.errorTitle}>Something went wrong</Text>
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
@@ -132,16 +141,21 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
+      <Animated.ScrollView
+        style={{ opacity: fadeAnim }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2563eb']} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh} 
+            colors={['#4A90E2']} 
+            tintColor="#4A90E2"
+          />
         }
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
         <View style={styles.header}>
-          <View style={styles.headerContent}>
+          <View>
             <Text style={styles.greeting}>Good morning!</Text>
             <Text style={styles.subtitle}>Here's your expense overview</Text>
           </View>
@@ -149,17 +163,56 @@ export default function HomeScreen() {
             style={styles.addButton}
             onPress={() => router.push('/add-expense-quick')}
           >
-            <Plus size={24} color="#ffffff" />
+            <Plus size={24} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
 
+        {/* Stats Summary */}
+        <View style={styles.summaryContainer}>
+          <View style={styles.summaryCard}>
+            <View style={styles.summaryIcon}>
+              <DollarSign size={20} color="#4A90E2" />
+            </View>
+            <View>
+              <Text style={styles.summaryLabel}>Net Balance</Text>
+              <Text style={[styles.summaryValue, totalBalance >= 0 ? styles.positive : styles.negative]}>
+                {totalBalance >= 0 ? '+' : ''}${Math.abs(totalBalance).toFixed(2)}
+              </Text>
+            </View>
+          </View>
+          
+          <View style={styles.summaryCard}>
+            <View style={[styles.summaryIcon, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
+              <ArrowUpRight size={20} color="#10B981" />
+            </View>
+            <View>
+              <Text style={styles.summaryLabel}>You're Owed</Text>
+              <Text style={[styles.summaryValue, styles.positive]}>
+                ${totalOwed.toFixed(2)}
+              </Text>
+            </View>
+          </View>
+          
+          <View style={styles.summaryCard}>
+            <View style={[styles.summaryIcon, { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]}>
+              <ArrowDownRight size={20} color="#EF4444" />
+            </View>
+            <View>
+              <Text style={styles.summaryLabel}>You Owe</Text>
+              <Text style={[styles.summaryValue, styles.negative]}>
+                ${totalOwing.toFixed(2)}
+              </Text>
+            </View>
+          </View>
+        </View>
+
         {/* Usage Stats */}
-        <View style={styles.usageSection}>
-          <Text style={styles.usageSectionTitle}>Daily Usage</Text>
-          <View style={styles.usageCards}>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Daily Usage</Text>
+          <View style={styles.usageContainer}>
             <View style={styles.usageCard}>
               <View style={styles.usageHeader}>
-                <DollarSign size={20} color="#2563eb" />
+                <DollarSign size={18} color="#4A90E2" />
                 <Text style={styles.usageTitle}>Transactions</Text>
               </View>
               <Text style={styles.usageCount}>
@@ -170,8 +223,8 @@ export default function HomeScreen() {
                   style={[
                     styles.usageProgress, 
                     { 
-                      width: `${(usageStats.transactions.used / usageStats.transactions.total) * 100}%`,
-                      backgroundColor: usageStats.transactions.used >= usageStats.transactions.total ? '#dc2626' : '#2563eb'
+                      width: `${Math.min(100, (usageStats.transactions.used / usageStats.transactions.total) * 100)}%`,
+                      backgroundColor: usageStats.transactions.used >= usageStats.transactions.total ? '#EF4444' : '#4A90E2'
                     }
                   ]} 
                 />
@@ -180,7 +233,7 @@ export default function HomeScreen() {
 
             <View style={styles.usageCard}>
               <View style={styles.usageHeader}>
-                <Users size={20} color="#059669" />
+                <Users size={18} color="#10B981" />
                 <Text style={styles.usageTitle}>Groups</Text>
               </View>
               <Text style={styles.usageCount}>
@@ -191,8 +244,8 @@ export default function HomeScreen() {
                   style={[
                     styles.usageProgress, 
                     { 
-                      width: `${(usageStats.groups.used / usageStats.groups.total) * 100}%`,
-                      backgroundColor: usageStats.groups.used >= usageStats.groups.total ? '#dc2626' : '#059669'
+                      width: `${Math.min(100, (usageStats.groups.used / usageStats.groups.total) * 100)}%`,
+                      backgroundColor: usageStats.groups.used >= usageStats.groups.total ? '#EF4444' : '#10B981'
                     }
                   ]} 
                 />
@@ -201,78 +254,47 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Balance Cards */}
-        <View style={styles.balanceSection}>
-          <View style={styles.balanceCard}>
-            <View style={styles.balanceHeader}>
-              <DollarSign size={24} color="#2563eb" />
-              <Text style={styles.balanceTitle}>Net Balance</Text>
-            </View>
-            <Text style={[
-              styles.balanceAmount,
-              totalBalance >= 0 ? styles.positiveBalance : styles.negativeBalance
-            ]}>
-              {totalBalance >= 0 ? '+' : ''}${totalBalance.toFixed(2)}
-            </Text>
-            <Text style={styles.balanceSubtext}>
-              {totalBalance >= 0 ? 'You are owed overall' : 'You owe overall'}
-            </Text>
-          </View>
-
-          <View style={styles.balanceRow}>
-            <View style={[styles.balanceCard, styles.smallCard]}>
-              <View style={styles.balanceHeader}>
-                <ArrowUpRight size={20} color="#059669" />
-                <Text style={styles.smallCardTitle}>You're Owed</Text>
-              </View>
-              <Text style={[styles.balanceAmount, styles.positiveBalance, styles.smallAmount]}>
-                ${totalOwed.toFixed(2)}
-              </Text>
-            </View>
-
-            <View style={[styles.balanceCard, styles.smallCard]}>
-              <View style={styles.balanceHeader}>
-                <ArrowDownRight size={20} color="#dc2626" />
-                <Text style={styles.smallCardTitle}>You Owe</Text>
-              </View>
-              <Text style={[styles.balanceAmount, styles.negativeBalance, styles.smallAmount]}>
-                ${totalOwing.toFixed(2)}
-              </Text>
-            </View>
-          </View>
-        </View>
-
         {/* Quick Actions */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.quickActions}>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.actionsContainer}
+          >
             <TouchableOpacity 
-              style={styles.actionCard}
+              style={[styles.actionCard, { backgroundColor: '#EFF6FF' }]}
               onPress={() => router.push('/(tabs)/groups')}
             >
-              <Users size={24} color="#2563eb" />
+              <View style={[styles.actionIcon, { backgroundColor: '#4A90E2' }]}>
+                <Users size={20} color="#FFFFFF" />
+              </View>
               <Text style={styles.actionTitle}>View Groups</Text>
-              <Text style={styles.actionSubtitle}>{groups.length} active groups</Text>
+              <Text style={styles.actionSubtitle}>{groups.length} active</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
-              style={styles.actionCard}
+              style={[styles.actionCard, { backgroundColor: '#ECFDF5' }]}
               onPress={() => router.push('/add-group')}
             >
-              <Plus size={24} color="#059669" />
+              <View style={[styles.actionIcon, { backgroundColor: '#10B981' }]}>
+                <Plus size={20} color="#FFFFFF" />
+              </View>
               <Text style={styles.actionTitle}>New Group</Text>
-              <Text style={styles.actionSubtitle}>Start splitting expenses</Text>
+              <Text style={styles.actionSubtitle}>Start splitting</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
-              style={styles.actionCard}
+              style={[styles.actionCard, { backgroundColor: '#FFFBEB' }]}
               onPress={() => router.push('/add-expense-advanced')}
             >
-              <Calculator size={24} color="#ea580c" />
+              <View style={[styles.actionIcon, { backgroundColor: '#F59E0B' }]}>
+                <Calculator size={20} color="#FFFFFF" />
+              </View>
               <Text style={styles.actionTitle}>Advanced Split</Text>
-              <Text style={styles.actionSubtitle}>Multi-payer & custom splits</Text>
+              <Text style={styles.actionSubtitle}>Custom splits</Text>
             </TouchableOpacity>
-          </View>
+          </ScrollView>
         </View>
 
         {/* Recent Activity */}
@@ -280,33 +302,32 @@ export default function HomeScreen() {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Recent Activity</Text>
             <TouchableOpacity onPress={() => router.push('/(tabs)/transactions')}>
-              <Text style={styles.seeAllText}>See All</Text>
+              <Text style={styles.seeAll}>See All →</Text>
             </TouchableOpacity>
           </View>
 
           {recentExpenses.length > 0 ? (
-            <View style={styles.activityList}>
+            <View style={styles.activityContainer}>
               {recentExpenses.map((expense) => {
                 const group = groups.find(g => g.id === expense.groupId);
                 return (
                   <TouchableOpacity 
                     key={expense.id} 
-                    style={styles.activityItem}
+                    style={styles.activityCard}
                     onPress={() => router.push(`/group/${expense.groupId}`)}
                   >
                     <View style={styles.activityIcon}>
-                      <DollarSign size={16} color="#6b7280" />
+                      <DollarSign size={18} color="#4A90E2" />
                     </View>
                     <View style={styles.activityContent}>
-                      <Text style={styles.activityTitle}>{expense.description}</Text>
-                      <Text style={styles.activitySubtitle}>
-                        {group?.name || 'Unknown Group'} • Paid by {expense.paidBy}
-                        {expense.splitType && expense.splitType !== 'equal' && (
-                          <Text style={styles.splitTypeIndicator}> • {expense.splitType} split</Text>
-                        )}
+                      <Text style={styles.activityTitle} numberOfLines={1}>
+                        {expense.description}
+                      </Text>
+                      <Text style={styles.activitySubtitle} numberOfLines={1}>
+                        {group?.name || 'Unknown'} • {expense.paidBy}
                       </Text>
                     </View>
-                    <View style={styles.activityRight}>
+                    <View style={styles.activityAmountContainer}>
                       <Text style={styles.activityAmount}>${expense.amount.toFixed(2)}</Text>
                       <Text style={styles.activityDate}>{formatDate(expense.createdAt)}</Text>
                     </View>
@@ -316,52 +337,58 @@ export default function HomeScreen() {
             </View>
           ) : (
             <View style={styles.emptyState}>
-              <Calendar size={48} color="#d1d5db" />
+              <Image 
+                // source={require('@/assets/images/empty-activity.png')} 
+                style={styles.emptyImage}
+              />
               <Text style={styles.emptyTitle}>No recent activity</Text>
-              <Text style={styles.emptySubtitle}>Start adding expenses to see them here</Text>
+              <Text style={styles.emptyText}>Record your first expense to get started</Text>
               <TouchableOpacity 
-                style={styles.addFirstButton}
+                style={styles.emptyButton}
                 onPress={() => router.push('/add-expense-quick')}
               >
-                <Plus size={16} color="#2563eb" />
-                <Text style={styles.addFirstText}>Add First Expense</Text>
+                <Text style={styles.emptyButtonText}>Add Expense</Text>
               </TouchableOpacity>
             </View>
           )}
         </View>
 
-        {/* Active Groups Preview */}
+        {/* Active Groups */}
         {groups.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Active Groups</Text>
               <TouchableOpacity onPress={() => router.push('/(tabs)/groups')}>
-                <Text style={styles.seeAllText}>See All</Text>
+                <Text style={styles.seeAll}>See All →</Text>
               </TouchableOpacity>
             </View>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.groupsScroll}>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.groupsContainer}
+            >
               {groups.slice(0, 5).map((group) => {
                 const userBalance = Object.values(group.balances).reduce((sum, balance) => sum + balance, 0);
                 return (
                   <TouchableOpacity
                     key={group.id}
-                    style={styles.groupPreviewCard}
+                    style={styles.groupCard}
                     onPress={() => router.push(`/group/${group.id}`)}
                   >
-                    <View style={styles.groupPreviewHeader}>
-                      <Text style={styles.groupPreviewName}>{group.name}</Text>
-                      <View style={styles.membersBadge}>
-                        <Users size={12} color="#6b7280" />
-                        <Text style={styles.membersCount}>{group.members.length}</Text>
+                    <View style={styles.groupHeader}>
+                      <Text style={styles.groupName} numberOfLines={1}>{group.name}</Text>
+                      <View style={styles.groupMembers}>
+                        <Users size={14} color="#6B7280" />
+                        <Text style={styles.memberCount}>{group.members.length}</Text>
                       </View>
                     </View>
-                    <Text style={styles.groupPreviewTotal}>${group.totalExpenses.toFixed(2)}</Text>
+                    <Text style={styles.groupTotal}>${group.totalExpenses.toFixed(2)}</Text>
                     <Text style={[
-                      styles.groupPreviewBalance,
-                      userBalance >= 0 ? styles.positiveBalance : styles.negativeBalance
+                      styles.groupBalance,
+                      userBalance >= 0 ? styles.positive : styles.negative
                     ]}>
-                      {userBalance >= 0 ? '+' : ''}${userBalance.toFixed(2)}
+                      {userBalance >= 0 ? '+' : '-'}${Math.abs(userBalance).toFixed(2)}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -369,14 +396,14 @@ export default function HomeScreen() {
             </ScrollView>
           </View>
         )}
-      </ScrollView>
+      </Animated.ScrollView>
 
       {/* Floating Action Button */}
       <TouchableOpacity 
         style={styles.fab}
         onPress={() => router.push('/add-expense-quick')}
       >
-        <Plus size={24} color="#ffffff" />
+        <Plus size={24} color="#FFFFFF" />
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -385,110 +412,167 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
-  },
-  scrollView: {
-    flex: 1,
+    backgroundColor: '#F8FAFC',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 24,
   },
   loadingText: {
     fontSize: 16,
-    color: '#6b7280',
-    marginTop: 12,
+    color: '#64748B',
+    marginTop: 16,
+    fontFamily: 'Inter-Medium',
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 24,
   },
   errorTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#dc2626',
-    marginTop: 16,
+    color: '#EF4444',
+    marginTop: 24,
     marginBottom: 8,
+    fontFamily: 'Inter-Bold',
   },
   errorText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: '#64748B',
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 32,
     lineHeight: 24,
+    fontFamily: 'Inter-Regular',
+    maxWidth: '80%',
   },
   retryButton: {
-    backgroundColor: '#2563eb',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
+    backgroundColor: '#4A90E2',
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 12,
+    elevation: 2,
   },
   retryButtonText: {
-    color: '#ffffff',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    backgroundColor: '#ffffff',
-  },
-  headerContent: {
-    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 8,
   },
   greeting: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#111827',
-    marginBottom: 4,
+    color: '#0F172A',
+    fontFamily: 'Inter-Bold',
   },
   subtitle: {
     fontSize: 16,
-    color: '#6b7280',
+    color: '#64748B',
+    marginTop: 4,
+    fontFamily: 'Inter-Regular',
   },
   addButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: '#4A90E2',
     width: 48,
     height: 48,
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#2563eb',
+    elevation: 4,
+    shadowColor: '#4A90E2',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 8,
   },
-  usageSection: {
-    paddingHorizontal: 20,
+  summaryContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
   },
-  usageSectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
+  summaryCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    width: '31%',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  summaryIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(74, 144, 226, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 12,
   },
-  usageCards: {
+  summaryLabel: {
+    fontSize: 14,
+    color: '#64748B',
+    marginBottom: 4,
+    fontFamily: 'Inter-Medium',
+  },
+  summaryValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
+  },
+  positive: {
+    color: '#10B981',
+  },
+  negative: {
+    color: '#EF4444',
+  },
+  section: {
+    paddingHorizontal: 24,
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 16,
+    fontFamily: 'Inter-Bold',
+  },
+  sectionHeader: {
     flexDirection: 'row',
-    gap: 12,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  seeAll: {
+    fontSize: 14,
+    color: '#4A90E2',
+    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
+  },
+  usageContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
   },
   usageCard: {
-    flex:  1,
-    backgroundColor: '#f8fafc',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+    marginBottom: 20,
   },
   usageHeader: {
     flexDirection: 'row',
@@ -498,283 +582,229 @@ const styles = StyleSheet.create({
   usageTitle: {
     marginLeft: 8,
     fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
+    color: '#334155',
+    fontFamily: 'Inter-Medium',
   },
   usageCount: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#111827',
+    color: '#0F172A',
     marginBottom: 8,
+    fontFamily: 'Inter-Bold',
   },
   usageBar: {
-    height: 4,
-    backgroundColor: '#e5e7eb',
-    borderRadius: 2,
+    height: 6,
+    backgroundColor: '#E2E8F0',
+    borderRadius: 3,
     overflow: 'hidden',
   },
   usageProgress: {
     height: '100%',
-    borderRadius: 2,
+    borderRadius: 3,
   },
-  balanceSection: {
-    padding: 20,
+  actionsContainer: {
+    flexDirection: 'row',
+    gap: 16,
   },
-  balanceCard: {
-    backgroundColor: '#ffffff',
+  actionCard: {
+    width: 160,
     borderRadius: 16,
     padding: 20,
-    marginBottom: 12,
+    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
   },
-  balanceHeader: {
-    flexDirection: 'row',
+  actionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
-  balanceTitle: {
-    marginLeft: 8,
+  actionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
-  },
-  balanceAmount: {
-    fontSize: 32,
-    fontWeight: '700',
+    color: '#0F172A',
     marginBottom: 4,
+    fontFamily: 'Inter-SemiBold',
   },
-  positiveBalance: {
-    color: '#059669',
-  },
-  negativeBalance: {
-    color: '#dc2626',
-  },
-  balanceSubtext: {
+  actionSubtitle: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#64748B',
+    fontFamily: 'Inter-Regular',
   },
-  balanceRow: {
+  activityContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    overflow: 'hidden',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  activityCard: {
     flexDirection: 'row',
-    gap: 12,
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
   },
-  smallCard: {
+  activityIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  activityContent: {
     flex: 1,
-    marginBottom: 0,
+    marginRight: 8,
   },
-  smallCardTitle: {
-    marginLeft: 6,
-    fontSize: 14,
+  activityTitle: {
+    fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#0F172A',
+    marginBottom: 4,
+    fontFamily: 'Inter-SemiBold',
   },
-  smallAmount: {
-    fontSize: 20,
+  activitySubtitle: {
+    fontSize: 13,
+    color: '#64748B',
+    fontFamily: 'Inter-Regular',
   },
-  section: {
-    paddingHorizontal: 20,
+  activityAmountContainer: {
+    alignItems: 'flex-end',
+  },
+  activityAmount: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 4,
+    fontFamily: 'Inter-Bold',
+  },
+  activityDate: {
+    fontSize: 12,
+    color: '#94A3B8',
+    fontFamily: 'Inter-Regular',
+  },
+  emptyState: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 32,
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  emptyImage: {
+    width: 120,
+    height: 120,
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#0F172A',
+    marginBottom: 8,
+    fontFamily: 'Inter-SemiBold',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#64748B',
+    textAlign: 'center',
     marginBottom: 24,
+    fontFamily: 'Inter-Regular',
+    maxWidth: '80%',
   },
-  sectionHeader: {
+  emptyButton: {
+    backgroundColor: '#4A90E2',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  emptyButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
+  },
+  groupsContainer: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  groupCard: {
+    width: 200,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  groupHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
   },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  seeAllText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#2563eb',
-  },
-  quickActions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  actionCard: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  actionTitle: {
+  groupName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  actionSubtitle: {
-    fontSize: 12,
-    color: '#6b7280',
-    textAlign: 'center',
-  },
-  activityList: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  activityItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  activityIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#f3f4f6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  activityContent: {
-    flex: 1,
-  },
-  activityTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 2,
-  },
-  activitySubtitle: {
-    fontSize: 12,
-    color: '#6b7280',
-  },
-  splitTypeIndicator: {
-    color: '#ea580c',
-    fontWeight: '600',
-  },
-  activityRight: {
-    alignItems: 'flex-end',
-  },
-  activityAmount: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 2,
-  },
-  activityDate: {
-    fontSize: 12,
-    color: '#6b7280',
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 40,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#374151',
-    marginTop: 12,
-    marginBottom: 4,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: '#6b7280',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  addFirstButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#eff6ff',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-  },
-  addFirstText: {
-    marginLeft: 6,
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#2563eb',
-  },
-  groupsScroll: {
-    marginHorizontal: -20,
-    paddingHorizontal: 20,
-  },
-  groupPreviewCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    marginRight: 12,
-    width: 160,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  groupPreviewHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  groupPreviewName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
+    color: '#0F172A',
     flex: 1,
     marginRight: 8,
+    fontFamily: 'Inter-SemiBold',
   },
-  membersBadge: {
+  groupMembers: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f3f4f6',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 8,
   },
-  membersCount: {
-    marginLeft: 2,
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#6b7280',
-  },
-  groupPreviewTotal: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  groupPreviewBalance: {
+  memberCount: {
+    marginLeft: 4,
     fontSize: 12,
+    color: '#64748B',
+    fontFamily: 'Inter-Medium',
+  },
+  groupTotal: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 4,
+    fontFamily: 'Inter-Bold',
+  },
+  groupBalance: {
+    fontSize: 14,
     fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
   },
   fab: {
     position: 'absolute',
-    bottom: 20,
-    right: 20,
-    backgroundColor: '#2563eb',
+    bottom: 32,
+    right: 24,
+    backgroundColor: '#4A90E2',
     width: 56,
     height: 56,
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#2563eb',
-    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+    shadowColor: '#4A90E2',
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 8,
   },
 });
