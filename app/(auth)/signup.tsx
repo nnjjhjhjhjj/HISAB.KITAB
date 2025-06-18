@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import { router } from 'expo-router';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, User, Phone, ArrowLeft } from 'lucide-react-native';
 import { apiService } from '@/services/api';
 import { googleAuthService } from '@/services/googleAuth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Email & phone regex patterns
 const emailRegex = /^\S+@\S+\.\S+$/;
@@ -42,6 +43,11 @@ export default function SignupScreen() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
+
+  useEffect(() => {
+    // Mark that user has seen welcome screen
+    AsyncStorage.setItem('hasSeenWelcome', 'true');
+  }, []);
 
   const updateFormData = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));

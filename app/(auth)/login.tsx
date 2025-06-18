@@ -19,6 +19,7 @@ import { router } from 'expo-router';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, User } from 'lucide-react-native';
 import { apiService } from '@/services/api';
 import { googleAuthService } from '@/services/googleAuth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -29,6 +30,9 @@ export default function LoginScreen() {
   const fadeAnim = useState(new Animated.Value(0))[0];
 
   useEffect(() => {
+    // Mark that user has seen welcome screen
+    AsyncStorage.setItem('hasSeenWelcome', 'true');
+    
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 800,

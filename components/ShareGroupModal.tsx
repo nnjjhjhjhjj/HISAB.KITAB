@@ -36,8 +36,8 @@ interface ShareGroupModalProps {
 export default function ShareGroupModal({ visible, onClose, group }: ShareGroupModalProps) {
   const [customMessage, setCustomMessage] = useState('');
   
-  // Use the environment variable for app domain
-  const APP_DOMAIN = process.env.EXPO_PUBLIC_APP_DOMAIN || 'splitsaathi.up.railway.app';
+  // Use the Railway domain for share links
+  const APP_DOMAIN = 'splitsaathi.up.railway.app';
   const shareUrl = group.inviteLink || `https://${APP_DOMAIN}/join/${group.id}`;
   const inviteCode = group.inviteCode || 'N/A';
   const defaultMessage = `Join "${group.name}" on SplitSaathi to split expenses together! 
@@ -173,7 +173,7 @@ Download SplitSaathi from your app store to get started!`;
         <View style={styles.instructionsCard}>
           <Text style={styles.instructionsTitle}>How to Join</Text>
           <Text style={styles.instructionsText}>
-            1. Download SplitSaathi app from your app store{'\n'}
+            1. Visit splitsaathi.up.railway.app or download the SplitSaathi app{'\n'}
             2. Create an account or sign in{'\n'}
             3. Tap "Join Group" and enter the invite code{'\n'}
             4. Start splitting expenses together!
