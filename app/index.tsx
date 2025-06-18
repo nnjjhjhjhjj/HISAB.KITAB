@@ -1,27 +1,59 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { apiService } from '@/services/api';
 
 export default function IndexScreen() {
-  useEffect(() => {
-    // Simulate checking authentication status
-    const checkAuth = async () => {
-      // For demo purposes, always redirect to login
-      // In a real app, you'd check if user is authenticated
-      setTimeout(() => {
-        router.replace('/(auth)/login');
-      }, 1000);
-    };
+  const [isLoading, setIsLoading] = useState(true);
 
-    checkAuth();
+  useEffect(() => {
+    checkAuthStatus();
   }, []);
 
-  return (
-    <View style={styles.container}>
-      <ActivityIndicator size="large" color="#2563eb" />
-      <Text style={styles.text}>Loading...</Text>
-    </View>
-  );
+  const checkAuthStatus = async () => {
+    try {
+      // Check if user has a stored auth token
+      const token = await AsyncStorage.getItem('authToken');
+      
+      if (token) {
+        // Set the token in the API service
+        apiService.setAuthToken(token);
+        
+        // Verify the token is still valid by trying to get user profile
+        try {
+          await apiService.getUserProfile();
+          // Token is valid, redirect to main app
+          router.replace('/(tabs)');
+          return;
+        } catch (error) {
+          // Token is invalid, clear it
+          await AsyncStorage.removeItem('authToken');
+          apiService.clearAuthToken();
+        }
+      }
+      
+      // No valid token, redirect to login
+      router.replace('/(auth)/login');
+    } catch (error) {
+      console.error('Error checking auth status:', error);
+      // On error, redirect to login
+      router.replace('/(auth)/login');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#2563eb" />
+        <Text style={styles.text}>Loading SplitSaathi...</Text>
+      </View>
+    );
+  }
+
+  return null;
 }
 
 const styles = StyleSheet.create({

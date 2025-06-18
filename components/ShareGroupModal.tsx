@@ -8,12 +8,8 @@ import {
   TextInput,
   Alert,
   Share,
-  Linking,
   ScrollView,
 } from 'react-native';
-import Clipboard from '@react-native-clipboard/clipboard';
-import { APP_DOMAIN } from '@env';
-
 import {
   X,
   Share2,
@@ -40,20 +36,31 @@ interface ShareGroupModalProps {
 export default function ShareGroupModal({ visible, onClose, group }: ShareGroupModalProps) {
   const [customMessage, setCustomMessage] = useState('');
   
-  // Use a proper app domain - you should replace this with your actual domain
-  const APP_DOMAIN = 'hisabkitab.app'; // Replace with your actual domain
+  // Use the environment variable for app domain
+  const APP_DOMAIN = process.env.EXPO_PUBLIC_APP_DOMAIN || 'splitsaathi.up.railway.app';
   const shareUrl = group.inviteLink || `https://${APP_DOMAIN}/join/${group.id}`;
   const inviteCode = group.inviteCode || 'N/A';
-  const defaultMessage = `Join "${group.name}" on Hisab Kitab to split expenses together! 
+  const defaultMessage = `Join "${group.name}" on SplitSaathi to split expenses together! 
 
 Use invite code: ${inviteCode}
 Or click the invite link: ${shareUrl}
 
-Download Hisab Kitab from your app store to get started!`;
+Download SplitSaathi from your app store to get started!`;
 
-  const handleCopy = (text: string, label: string) => {
-    Clipboard.setString(text);
-    Alert.alert('Copied!', `${label} copied to clipboard`);
+  const handleCopy = async (text: string, label: string) => {
+    try {
+      // For web, use the Clipboard API
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        // Fallback for React Native
+        const Clipboard = require('@react-native-clipboard/clipboard').default;
+        Clipboard.setString(text);
+      }
+      Alert.alert('Copied!', `${label} copied to clipboard`);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to copy to clipboard');
+    }
   };
 
   const handleShare = async () => {
@@ -62,7 +69,7 @@ Download Hisab Kitab from your app store to get started!`;
       await Share.share({
         message: message,
         url: shareUrl,
-        title: `Join ${group.name} on Hisab Kitab`,
+        title: `Join ${group.name} on SplitSaathi`,
       });
     } catch (error) {
       Alert.alert('Error', 'Failed to share');
@@ -70,17 +77,16 @@ Download Hisab Kitab from your app store to get started!`;
   };
 
   const handleEmailShare = () => {
-    const subject = `Join "${group.name}" on Hisab Kitab`;
+    const subject = `Join "${group.name}" on SplitSaathi`;
     const body = customMessage.trim() || defaultMessage;
     const emailUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     
-    // In a real app, you would use Linking.openURL(emailUrl)
     Alert.alert('Email Share', 'This would open your email app with the invite message');
   };
 
   const handleSMS = () => {
     const message = encodeURIComponent(customMessage || defaultMessage);
-    Linking.openURL(`sms:?body=${message}`);
+    Alert.alert('SMS Share', 'This would open your SMS app with the invite message');
   };
 
   return (
@@ -103,7 +109,7 @@ Download Hisab Kitab from your app store to get started!`;
           <View style={styles.row}>
             <Text style={styles.value}>{inviteCode}</Text>
             <TouchableOpacity onPress={() => handleCopy(inviteCode, 'Invite code')}>
-              <Copy size={20} color="#2563eb" />
+              <Copy size={20} color="#4f46e5" />
             </TouchableOpacity>
           </View>
         </View>
@@ -113,7 +119,7 @@ Download Hisab Kitab from your app store to get started!`;
           <View style={styles.row}>
             <Text style={styles.link} numberOfLines={1}>{shareUrl}</Text>
             <TouchableOpacity onPress={() => handleCopy(shareUrl, 'Invite link')}>
-              <Copy size={20} color="#2563eb" />
+              <Copy size={20} color="#4f46e5" />
             </TouchableOpacity>
           </View>
         </View>
@@ -131,43 +137,47 @@ Download Hisab Kitab from your app store to get started!`;
         </View>
 
         <View style={styles.shareOptions}>
-          <TouchableOpacity style={styles.option} onPress={handleShare}>
-            <Share2 size={22} color="#1d4ed8" />
-            <Text style={styles.optionText}>Share</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.option} onPress={handleEmail}>
-            <Mail size={22} color="#10b981" />
-            <Text style={styles.optionText}>Email</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.option} onPress={handleSMS}>
-            <MessageCircle size={22} color="#f59e0b" />
-            <Text style={styles.optionText}>SMS</Text>
-          </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={styles.shareOption} 
-                onPress={() => Alert.alert('QR Code', 'QR code sharing would be implemented here')}
-              >
-                <View style={styles.shareIconContainer}>
-                  <QrCode size={24} color="#7c3aed" />
-                </View>
-                <Text style={styles.shareOptionText}>QR Code</Text>
-              </TouchableOpacity>
+          <TouchableOpacity style={styles.shareOption} onPress={handleShare}>
+            <View style={styles.shareIconContainer}>
+              <Share2 size={24} color="#4f46e5" />
             </View>
-          </View>
+            <Text style={styles.shareOptionText}>Share</Text>
+          </TouchableOpacity>
 
-          {/* Instructions */}
-          <View style={styles.instructionsCard}>
-            <Text style={styles.instructionsTitle}>How to Join</Text>
-            <Text style={styles.instructionsText}>
-              1. Download Hisab Kitab app from your app store{'\n'}
-              2. Create an account or sign in{'\n'}
-              3. Tap "Join Group" and enter the invite code{'\n'}
-              4. Start splitting expenses together!
-            </Text>
-          </View>
+          <TouchableOpacity style={styles.shareOption} onPress={handleEmailShare}>
+            <View style={styles.shareIconContainer}>
+              <Mail size={24} color="#10b981" />
+            </View>
+            <Text style={styles.shareOptionText}>Email</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.shareOption} onPress={handleSMS}>
+            <View style={styles.shareIconContainer}>
+              <MessageCircle size={24} color="#f59e0b" />
+            </View>
+            <Text style={styles.shareOptionText}>SMS</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.shareOption} 
+            onPress={() => Alert.alert('QR Code', 'QR code sharing would be implemented here')}
+          >
+            <View style={styles.shareIconContainer}>
+              <QrCode size={24} color="#7c3aed" />
+            </View>
+            <Text style={styles.shareOptionText}>QR Code</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Instructions */}
+        <View style={styles.instructionsCard}>
+          <Text style={styles.instructionsTitle}>How to Join</Text>
+          <Text style={styles.instructionsText}>
+            1. Download SplitSaathi app from your app store{'\n'}
+            2. Create an account or sign in{'\n'}
+            3. Tap "Join Group" and enter the invite code{'\n'}
+            4. Start splitting expenses together!
+          </Text>
         </View>
       </ScrollView>
     </Modal>
@@ -184,56 +194,100 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 24,
+    paddingTop: 40,
   },
   title: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '700',
     color: '#1f2937',
   },
   section: {
-    marginBottom: 18,
+    marginBottom: 20,
   },
   label: {
     fontSize: 14,
+    fontWeight: '600',
     color: '#6b7280',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   value: {
     fontSize: 16,
     color: '#111827',
+    fontWeight: '500',
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    backgroundColor: '#f8fafc',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
   link: {
     fontSize: 14,
-    color: '#2563eb',
+    color: '#4f46e5',
     flex: 1,
     marginRight: 8,
   },
   input: {
     borderWidth: 1,
     borderColor: '#d1d5db',
-    borderRadius: 6,
-    padding: 10,
-    minHeight: 80,
+    borderRadius: 8,
+    padding: 12,
+    minHeight: 100,
     textAlignVertical: 'top',
     color: '#111827',
+    backgroundColor: '#f8fafc',
   },
   shareOptions: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginTop: 12,
+    marginVertical: 24,
+    paddingVertical: 20,
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
   },
-  option: {
+  shareOption: {
     alignItems: 'center',
   },
-  optionText: {
-    marginTop: 6,
+  shareIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  shareOptionText: {
     fontSize: 12,
     color: '#374151',
+    fontWeight: '500',
+  },
+  instructionsCard: {
+    backgroundColor: '#eff6ff',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+  },
+  instructionsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1e40af',
+    marginBottom: 8,
+  },
+  instructionsText: {
+    fontSize: 14,
+    color: '#1e40af',
+    lineHeight: 20,
   },
 });

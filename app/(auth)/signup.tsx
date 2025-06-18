@@ -54,7 +54,7 @@ export default function SignupScreen() {
 
     if (!name.trim()) newErrors.name = 'Enter your full name';
     if (!emailRegex.test(email)) newErrors.email = 'Enter a valid email';
-    if (!phoneRegex.test(phone)) newErrors.phone = 'Enter a valid phone number';
+    if (phone && !phoneRegex.test(phone)) newErrors.phone = 'Enter a valid phone number';
     if (password.length < 6) newErrors.password = 'Password must be at least 6 chars';
     if (password !== confirmPassword) newErrors.confirmPassword = 'Passwords dont match';
     if (!acceptTerms) newErrors.terms = 'You must accept the terms';
@@ -76,7 +76,7 @@ export default function SignupScreen() {
         formData.email.trim(),
         formData.password
       );
-      apiService.setAuthToken(token);
+      await apiService.setAuthToken(token);
 
       Alert.alert('Success', 'Account created successfully!', [
         {
@@ -101,7 +101,7 @@ export default function SignupScreen() {
         // Try to register with Google user info
         try {
           const { token, user } = await apiService.registerWithGoogle(result.user);
-          apiService.setAuthToken(token);
+          await apiService.setAuthToken(token);
           
           Alert.alert('Success', 'Account created with Google!', [
             {
@@ -113,7 +113,7 @@ export default function SignupScreen() {
           // If registration fails, try to login (user might already exist)
           try {
             const { token, user } = await apiService.loginWithGoogle(result.user);
-            apiService.setAuthToken(token);
+            await apiService.setAuthToken(token);
             
             Alert.alert('Success', 'Signed in with existing Google account!', [
               {
@@ -148,9 +148,11 @@ export default function SignupScreen() {
               <ArrowLeft size={24} color="#374151" />
             </TouchableOpacity>
             <View style={styles.headerContent}>
-              <View style={styles.logo}><User size={28} color="#fff" /></View>
+              <View style={styles.logo}>
+                <Text style={styles.logoText}>💰</Text>
+              </View>
               <Text style={styles.title}>Create Account</Text>
-              <Text style={styles.subtitle}>Join SplitWise and manage your expenses</Text>
+              <Text style={styles.subtitle}>Join SplitSaathi and manage your expenses</Text>
             </View>
           </View>
 
@@ -190,9 +192,9 @@ export default function SignupScreen() {
               </View>
             </View>
 
-            {/* Phone */}
+            {/* Phone (Optional) */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Phone Number</Text>
+              <Text style={styles.label}>Phone Number (Optional)</Text>
               <View style={[styles.inputContainer, errors.phone && styles.inputError]}>
                 <Phone size={20} color="#6b7280" style={styles.inputIcon} />
                 <TextInput
@@ -338,14 +340,17 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#2563eb',
+    backgroundColor: '#4f46e5',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#2563eb',
+    shadowColor: '#4f46e5',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
+  },
+  logoText: {
+    fontSize: 32,
   },
   title: { fontSize: 28, fontWeight: '700', color: '#111827', marginBottom: 8, textAlign: 'center' },
   subtitle: { fontSize: 16, color: '#6b7280', textAlign: 'center', lineHeight: 24 },
@@ -385,19 +390,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  checkboxChecked: { backgroundColor: '#2563eb', borderColor: '#2563eb' },
+  checkboxChecked: { backgroundColor: '#4f46e5', borderColor: '#4f46e5' },
   checkmark: { color: '#fff', fontSize: 12, fontWeight: '700' },
   termsText: { flex: 1, fontSize: 14, color: '#6b7280', lineHeight: 20 },
-  termsLink: { color: '#2563eb', fontWeight: '600' },
+  termsLink: { color: '#4f46e5', fontWeight: '600' },
   signupButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: '#4f46e5',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 16,
     borderRadius: 16,
     marginBottom: 24,
-    shadowColor: '#2563eb',
+    shadowColor: '#4f46e5',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -457,6 +462,6 @@ const styles = StyleSheet.create({
   },
   footer: { paddingVertical: 24, alignItems: 'center' },
   footerText: { fontSize: 16, color: '#6b7280' },
-  loginLink: { color: '#2563eb', fontWeight: '600' },
+  loginLink: { color: '#4f46e5', fontWeight: '600' },
   errorText: { color: '#dc2626', fontSize: 12, marginTop: 4 },
 });

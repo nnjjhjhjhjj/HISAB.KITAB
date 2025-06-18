@@ -32,7 +32,7 @@ exports.createGroup = async (req, res) => {
 
     const savedGroup = await group.save();
 
-    // Generate invite link with Railway domain
+    // Generate invite link with environment variable domain
     const APP_DOMAIN = process.env.APP_DOMAIN || 'splitsaathi.up.railway.app';
     const inviteLink = `https://${APP_DOMAIN}/join/${savedGroup._id}`;
 
@@ -222,7 +222,7 @@ exports.getGroups = async (req, res) => {
             });
           });
 
-          // Generate invite link with Railway domain
+          // Generate invite link with environment variable domain
           const APP_DOMAIN = process.env.APP_DOMAIN || 'splitsaathi.up.railway.app';
           const inviteLink = `https://${APP_DOMAIN}/join/${group._id}`;
 
@@ -306,7 +306,7 @@ exports.getGroupById = async (req, res) => {
       });
     });
 
-    // Generate invite link with Railway domain
+    // Generate invite link with environment variable domain
     const APP_DOMAIN = process.env.APP_DOMAIN || 'splitsaathi.up.railway.app';
     const inviteLink = `https://${APP_DOMAIN}/join/${group._id}`;
 

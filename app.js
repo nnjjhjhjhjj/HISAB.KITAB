@@ -58,6 +58,9 @@ app.get('/join/:groupId', (req, res) => {
   // Check if it's a mobile device
   const isMobile = /Mobile|Android|iPhone|iPad/.test(userAgent);
   
+  // Get app domain from environment variable
+  const APP_DOMAIN = process.env.APP_DOMAIN || 'splitsaathi.up.railway.app';
+  
   if (isMobile) {
     // Try to open the app with deep link, fallback to app store
     const deepLink = `splitsaathi://join/${groupId}`;
@@ -150,7 +153,7 @@ app.get('/join/:groupId', (req, res) => {
     `);
   } else {
     // Desktop - redirect to web app
-    res.redirect(`https://splitsaathi.up.railway.app/join/${groupId}`);
+    res.redirect(`https://${APP_DOMAIN}/join/${groupId}`);
   }
 });
 

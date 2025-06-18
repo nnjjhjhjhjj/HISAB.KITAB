@@ -1,21 +1,37 @@
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Group, Expense, User, ApiResponse } from '@/types';
 import { GoogleUser } from './googleAuth';
 
-// API Configuration - Updated to use Railway domain
-const API_BASE_URL = 'https://splitsaathi.up.railway.app';
+// API Configuration - Use environment variable or fallback
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://splitsaathi.up.railway.app';
 
 // Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Auth token storage (in a real app, use secure storage)
+// Auth token storage
 let authToken: string | null = null;
+
+// Initialize auth token from storage
+const initializeAuthToken = async () => {
+  try {
+    const token = await AsyncStorage.getItem('authToken');
+    if (token) {
+      authToken = token;
+    }
+  } catch (error) {
+    console.error('Error loading auth token:', error);
+  }
+};
+
+// Initialize on module load
+initializeAuthToken();
 
 // Request interceptor to add auth token
 api.interceptors.request.use(
@@ -37,7 +53,7 @@ api.interceptors.response.use(
     console.log(`API response from ${response.config.url}:`, response.status);
     return response;
   },
-  (error) => {
+  async (error) => {
     console.error('API Error:', error.response?.data || error.message);
     console.error('API Error Status:', error.response?.status);
     console.error('API Error URL:', error.config?.url);
@@ -45,7 +61,8 @@ api.interceptors.response.use(
     // Handle 401 errors (unauthorized)
     if (error.response?.status === 401) {
       authToken = null;
-      // In a real app, redirect to login
+      await AsyncStorage.removeItem('authToken');
+      // In a real app, you might want to redirect to login here
     }
     
     return Promise.reject(error);
@@ -63,6 +80,7 @@ export const apiService = {
       
       const { token, user } = response.data;
       authToken = token;
+      await AsyncStorage.setItem('authToken', token);
       return { token, user };
     } catch (error) {
       console.error('Login API call failed:', error);
@@ -81,6 +99,7 @@ export const apiService = {
       
       const { token, user } = response.data;
       authToken = token;
+      await AsyncStorage.setItem('authToken', token);
       return { token, user };
     } catch (error) {
       console.error('Registration API call failed:', error);
@@ -105,6 +124,7 @@ export const apiService = {
       
       const { token, user } = response.data;
       authToken = token;
+      await AsyncStorage.setItem('authToken', token);
       return { token, user };
     } catch (error) {
       console.error('Google login API call failed:', error);
@@ -128,6 +148,7 @@ export const apiService = {
       
       const { token, user } = response.data;
       authToken = token;
+      await AsyncStorage.setItem('authToken', token);
       return { token, user };
     } catch (error) {
       console.error('Google registration API call failed:', error);
@@ -153,15 +174,17 @@ export const apiService = {
   },
 
   // Set auth token (for when user logs in)
-  setAuthToken(token: string) {
+  async setAuthToken(token: string) {
     authToken = token;
-    console.log('Auth token set');
+    await AsyncStorage.setItem('authToken', token);
+    console.log('Auth token set and stored');
   },
 
   // Clear auth token (for logout)
-  clearAuthToken() {
+  async clearAuthToken() {
     authToken = null;
-    console.log('Auth token cleared');
+    await AsyncStorage.removeItem('authToken');
+    console.log('Auth token cleared and removed from storage');
   },
 
   // Check if user is authenticated

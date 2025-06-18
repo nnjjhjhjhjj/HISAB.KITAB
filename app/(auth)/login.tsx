@@ -46,7 +46,7 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       const { token, user } = await apiService.login(email.trim(), password);
-      apiService.setAuthToken(token);
+      await apiService.setAuthToken(token);
       
       router.replace('/(tabs)');
     } catch (error) {
@@ -65,12 +65,12 @@ export default function LoginScreen() {
       if (result.success && result.user) {
         try {
           const { token, user } = await apiService.loginWithGoogle(result.user);
-          apiService.setAuthToken(token);
+          await apiService.setAuthToken(token);
           router.replace('/(tabs)');
         } catch (loginError) {
           try {
             const { token, user } = await apiService.registerWithGoogle(result.user);
-            apiService.setAuthToken(token);
+            await apiService.setAuthToken(token);
             router.replace('/(tabs)');
           } catch (registerError) {
             console.error('Google registration error:', registerError);
@@ -102,12 +102,13 @@ export default function LoginScreen() {
         >
           {/* Header */}
           <View style={styles.header}>
-            <Image 
-              // source={require('@/assets/images/login-logo.png')}
-              style={styles.logo}
-            />
+            <View style={styles.logoContainer}>
+              <View style={styles.logo}>
+                <Text style={styles.logoText}>💰</Text>
+              </View>
+            </View>
             <Text style={styles.title}>Welcome Back</Text>
-            <Text style={styles.subtitle}>Sign in to your account</Text>
+            <Text style={styles.subtitle}>Sign in to your SplitSaathi account</Text>
           </View>
 
           {/* Form */}
@@ -190,10 +191,7 @@ export default function LoginScreen() {
               <ActivityIndicator color="#374151" size="small" />
             ) : (
               <>
-                <Image 
-                  // source={require('@/assets/images/google-logo.png')}
-                  style={styles.googleLogo}
-                />
+                <Text style={styles.googleIcon}>G</Text>
                 <Text style={styles.googleButtonText}>Sign in with Google</Text>
               </>
             )}
@@ -230,10 +228,24 @@ const styles = StyleSheet.create({
     paddingTop: 40,
     paddingBottom: 32,
   },
+  logoContainer: {
+    marginBottom: 24,
+  },
   logo: {
     width: 120,
     height: 120,
-    marginBottom: 24,
+    borderRadius: 60,
+    backgroundColor: '#4f46e5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#4f46e5',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  logoText: {
+    fontSize: 48,
   },
   title: {
     fontSize: 28,
@@ -295,17 +307,17 @@ const styles = StyleSheet.create({
   },
   forgotPasswordText: {
     fontSize: 14,
-    color: '#4A90E2',
+    color: '#4f46e5',
     fontWeight: '600',
     fontFamily: 'Inter-SemiBold',
   },
   loginButton: {
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#4f46e5',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 16,
     borderRadius: 14,
-    shadowColor: '#4A90E2',
+    shadowColor: '#4f46e5',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -357,9 +369,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
     borderColor: '#CBD5E1',
   },
-  googleLogo: {
-    width: 20,
-    height: 20,
+  googleIcon: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#4285f4',
     marginRight: 12,
   },
   googleButtonText: {
@@ -380,7 +393,7 @@ const styles = StyleSheet.create({
   },
   signupLink: {
     fontSize: 15,
-    color: '#4A90E2',
+    color: '#4f46e5',
     fontWeight: '600',
     fontFamily: 'Inter-SemiBold',
   },
