@@ -13,6 +13,15 @@ export default function IndexScreen() {
 
   const checkAuthStatus = async () => {
     try {
+      // Check if this is the first time opening the app
+      const hasSeenWelcome = await AsyncStorage.getItem('hasSeenWelcome');
+      
+      if (!hasSeenWelcome) {
+        // First time user - show welcome screen
+        router.replace('/welcome');
+        return;
+      }
+
       // Check if user has a stored auth token
       const token = await AsyncStorage.getItem('authToken');
       
@@ -37,8 +46,8 @@ export default function IndexScreen() {
       router.replace('/(auth)/login');
     } catch (error) {
       console.error('Error checking auth status:', error);
-      // On error, redirect to login
-      router.replace('/(auth)/login');
+      // On error, redirect to welcome screen for safety
+      router.replace('/welcome');
     } finally {
       setIsLoading(false);
     }
@@ -47,8 +56,13 @@ export default function IndexScreen() {
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <ActivityIndicator size="large" color="#2563eb" />
+        <View style={styles.logoContainer}>
+          <Text style={styles.logoEmoji}>💰</Text>
+          <Text style={styles.logoText}>SplitSaathi</Text>
+        </View>
+        <ActivityIndicator size="large" color="#4f46e5" />
         <Text style={styles.text}>Loading SplitSaathi...</Text>
+        <Text style={styles.subtext}>Made with ❤️ in Nepal 🇳🇵</Text>
       </View>
     );
   }
@@ -62,10 +76,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f8fafc',
+    paddingHorizontal: 20,
+  },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  logoEmoji: {
+    fontSize: 48,
+    marginRight: 12,
+  },
+  logoText: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#111827',
   },
   text: {
     marginTop: 16,
     fontSize: 16,
     color: '#6b7280',
+    fontWeight: '500',
+  },
+  subtext: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#9ca3af',
   },
 });
