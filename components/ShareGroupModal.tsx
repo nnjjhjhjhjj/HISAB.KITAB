@@ -8,51 +8,52 @@ import {
   TextInput,
   Alert,
   Share,
-  Clipboard,
+  Linking,
+  ScrollView,
 } from 'react-native';
-import { X, Share2, Copy, Link, QrCode, Mail, MessageCircle } from 'lucide-react-native';
+import Clipboard from '@react-native-clipboard/clipboard';
+import { APP_DOMAIN } from '@env';
+
+import {
+  X,
+  Share2,
+  Copy,
+  Link as LinkIcon,
+  QrCode,
+  Mail,
+  MessageCircle,
+} from 'lucide-react-native';
+
+interface Group {
+  id: string;
+  name: string;
+  inviteCode?: string;
+  inviteLink?: string;
+}
 
 interface ShareGroupModalProps {
   visible: boolean;
   onClose: () => void;
-  group: {
-    id: string;
-    name: string;
-    inviteCode?: string;
-    inviteLink?: string;
-  };
+  group: Group;
 }
 
 export default function ShareGroupModal({ visible, onClose, group }: ShareGroupModalProps) {
   const [customMessage, setCustomMessage] = useState('');
   
-  // Use Railway domain for the app
-  const APP_DOMAIN = 'splitsaathi.up.railway.app';
+  // Use a proper app domain - you should replace this with your actual domain
+  const APP_DOMAIN = 'hisabkitab.app'; // Replace with your actual domain
   const shareUrl = group.inviteLink || `https://${APP_DOMAIN}/join/${group.id}`;
   const inviteCode = group.inviteCode || 'N/A';
-  const defaultMessage = `Join "${group.name}" on SplitSaathi to split expenses together! 
+  const defaultMessage = `Join "${group.name}" on Hisab Kitab to split expenses together! 
 
-Use invite code: ${inviteCode} 
-Or click: ${shareUrl}
+Use invite code: ${inviteCode}
+Or click the invite link: ${shareUrl}
 
-Download SplitSaathi from your app store to get started!`;
+Download Hisab Kitab from your app store to get started!`;
 
-  const handleCopyLink = async () => {
-    try {
-      await Clipboard.setString(shareUrl);
-      Alert.alert('Copied!', 'Invite link copied to clipboard');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to copy link');
-    }
-  };
-
-  const handleCopyCode = async () => {
-    try {
-      await Clipboard.setString(inviteCode);
-      Alert.alert('Copied!', 'Invite code copied to clipboard');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to copy code');
-    }
+  const handleCopy = (text: string, label: string) => {
+    Clipboard.setString(text);
+    Alert.alert('Copied!', `${label} copied to clipboard`);
   };
 
   const handleShare = async () => {
@@ -61,7 +62,7 @@ Download SplitSaathi from your app store to get started!`;
       await Share.share({
         message: message,
         url: shareUrl,
-        title: `Join ${group.name} on SplitSaathi`,
+        title: `Join ${group.name} on Hisab Kitab`,
       });
     } catch (error) {
       Alert.alert('Error', 'Failed to share');
@@ -69,7 +70,7 @@ Download SplitSaathi from your app store to get started!`;
   };
 
   const handleEmailShare = () => {
-    const subject = `Join "${group.name}" on SplitSaathi`;
+    const subject = `Join "${group.name}" on Hisab Kitab`;
     const body = customMessage.trim() || defaultMessage;
     const emailUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     
@@ -77,100 +78,73 @@ Download SplitSaathi from your app store to get started!`;
     Alert.alert('Email Share', 'This would open your email app with the invite message');
   };
 
-  const handleSMSShare = () => {
-    const message = customMessage.trim() || defaultMessage;
-    const smsUrl = `sms:?body=${encodeURIComponent(message)}`;
-    
-    // In a real app, you would use Linking.openURL(smsUrl)
-    Alert.alert('SMS Share', 'This would open your messaging app with the invite message');
+  const handleSMS = () => {
+    const message = encodeURIComponent(customMessage || defaultMessage);
+    Linking.openURL(`sms:?body=${message}`);
   };
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
-    >
-      <View style={styles.container}>
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+      <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Share Group</Text>
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+          <Text style={styles.title}>Share Group</Text>
+          <TouchableOpacity onPress={onClose}>
             <X size={24} color="#374151" />
           </TouchableOpacity>
         </View>
 
-        <View style={styles.content}>
-          {/* Group Info */}
-          <View style={styles.groupInfo}>
-            <Text style={styles.groupName}>{group.name}</Text>
-            <Text style={styles.groupSubtitle}>Invite others to join your group</Text>
+        <View style={styles.section}>
+          <Text style={styles.label}>Group Name</Text>
+          <Text style={styles.value}>{group.name}</Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.label}>Invite Code</Text>
+          <View style={styles.row}>
+            <Text style={styles.value}>{inviteCode}</Text>
+            <TouchableOpacity onPress={() => handleCopy(inviteCode, 'Invite code')}>
+              <Copy size={20} color="#2563eb" />
+            </TouchableOpacity>
           </View>
+        </View>
 
-          {/* Invite Code */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Invite Code</Text>
-            <View style={styles.codeContainer}>
-              <Text style={styles.inviteCode}>{inviteCode}</Text>
-              <TouchableOpacity style={styles.copyButton} onPress={handleCopyCode}>
-                <Copy size={16} color="#2563eb" />
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.codeDescription}>
-              Share this code with friends to let them join your group
-            </Text>
+        <View style={styles.section}>
+          <Text style={styles.label}>Invite Link</Text>
+          <View style={styles.row}>
+            <Text style={styles.link} numberOfLines={1}>{shareUrl}</Text>
+            <TouchableOpacity onPress={() => handleCopy(shareUrl, 'Invite link')}>
+              <Copy size={20} color="#2563eb" />
+            </TouchableOpacity>
           </View>
+        </View>
 
-          {/* Invite Link */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Invite Link</Text>
-            <View style={styles.linkContainer}>
-              <Text style={styles.inviteLink} numberOfLines={1}>{shareUrl}</Text>
-              <TouchableOpacity style={styles.copyButton} onPress={handleCopyLink}>
-                <Copy size={16} color="#2563eb" />
-              </TouchableOpacity>
-            </View>
-          </View>
+        <View style={styles.section}>
+          <Text style={styles.label}>Custom Message</Text>
+          <TextInput
+            style={styles.input}
+            multiline
+            numberOfLines={4}
+            placeholder="Optional message to include in share"
+            value={customMessage}
+            onChangeText={setCustomMessage}
+          />
+        </View>
 
-          {/* Custom Message */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Custom Message (Optional)</Text>
-            <TextInput
-              style={styles.messageInput}
-              value={customMessage}
-              onChangeText={setCustomMessage}
-              placeholder={defaultMessage}
-              placeholderTextColor="#9ca3af"
-              multiline
-              numberOfLines={4}
-              maxLength={500}
-            />
-          </View>
+        <View style={styles.shareOptions}>
+          <TouchableOpacity style={styles.option} onPress={handleShare}>
+            <Share2 size={22} color="#1d4ed8" />
+            <Text style={styles.optionText}>Share</Text>
+          </TouchableOpacity>
 
-          {/* Share Options */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Share Via</Text>
-            <View style={styles.shareOptions}>
-              <TouchableOpacity style={styles.shareOption} onPress={handleShare}>
-                <View style={styles.shareIconContainer}>
-                  <Share2 size={24} color="#2563eb" />
-                </View>
-                <Text style={styles.shareOptionText}>Share</Text>
-              </TouchableOpacity>
+          <TouchableOpacity style={styles.option} onPress={handleEmail}>
+            <Mail size={22} color="#10b981" />
+            <Text style={styles.optionText}>Email</Text>
+          </TouchableOpacity>
 
-              <TouchableOpacity style={styles.shareOption} onPress={handleEmailShare}>
-                <View style={styles.shareIconContainer}>
-                  <Mail size={24} color="#059669" />
-                </View>
-                <Text style={styles.shareOptionText}>Email</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.shareOption} onPress={handleSMSShare}>
-                <View style={styles.shareIconContainer}>
-                  <MessageCircle size={24} color="#ea580c" />
-                </View>
-                <Text style={styles.shareOptionText}>SMS</Text>
-              </TouchableOpacity>
+          <TouchableOpacity style={styles.option} onPress={handleSMS}>
+            <MessageCircle size={22} color="#f59e0b" />
+            <Text style={styles.optionText}>SMS</Text>
+          </TouchableOpacity>
 
               <TouchableOpacity 
                 style={styles.shareOption} 
@@ -188,163 +162,78 @@ Download SplitSaathi from your app store to get started!`;
           <View style={styles.instructionsCard}>
             <Text style={styles.instructionsTitle}>How to Join</Text>
             <Text style={styles.instructionsText}>
-              1. Open SplitSaathi app or visit {APP_DOMAIN}{'\n'}
+              1. Download Hisab Kitab app from your app store{'\n'}
               2. Create an account or sign in{'\n'}
               3. Tap "Join Group" and enter the invite code{'\n'}
               4. Start splitting expenses together!
             </Text>
           </View>
         </View>
-      </View>
+      </ScrollView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
+    padding: 24,
+    backgroundColor: '#fff',
+    flexGrow: 1,
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  closeButton: {
-    padding: 4,
-  },
-  content: {
-    flex: 1,
-    padding: 20,
-  },
-  groupInfo: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 16,
   },
-  groupName: {
-    fontSize: 24,
+  title: {
+    fontSize: 22,
     fontWeight: '700',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  groupSubtitle: {
-    fontSize: 16,
-    color: '#6b7280',
+    color: '#1f2937',
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 18,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  codeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  inviteCode: {
-    flex: 1,
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#2563eb',
-    letterSpacing: 2,
-  },
-  copyButton: {
-    padding: 8,
-    backgroundColor: '#eff6ff',
-    borderRadius: 8,
-  },
-  codeDescription: {
-    fontSize: 12,
+  label: {
+    fontSize: 14,
     color: '#6b7280',
-    marginTop: 8,
+    marginBottom: 6,
   },
-  linkContainer: {
+  value: {
+    fontSize: 16,
+    color: '#111827',
+  },
+  row: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
   },
-  inviteLink: {
-    flex: 1,
+  link: {
     fontSize: 14,
     color: '#2563eb',
+    flex: 1,
     marginRight: 8,
   },
-  messageInput: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
+  input: {
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    fontSize: 14,
-    color: '#111827',
+    borderColor: '#d1d5db',
+    borderRadius: 6,
+    padding: 10,
+    minHeight: 80,
     textAlignVertical: 'top',
-    minHeight: 100,
+    color: '#111827',
   },
   shareOptions: {
     flexDirection: 'row',
     justifyContent: 'space-around',
+    marginTop: 12,
   },
-  shareOption: {
+  option: {
     alignItems: 'center',
-    flex: 1,
   },
-  shareIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#ffffff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  shareOptionText: {
+  optionText: {
+    marginTop: 6,
     fontSize: 12,
-    fontWeight: '600',
     color: '#374151',
-  },
-  instructionsCard: {
-    backgroundColor: '#eff6ff',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-  },
-  instructionsTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1e40af',
-    marginBottom: 8,
-  },
-  instructionsText: {
-    fontSize: 12,
-    color: '#1e40af',
-    lineHeight: 18,
   },
 });
