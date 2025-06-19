@@ -14,22 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { 
-  ArrowRight, 
-  Users, 
-  DollarSign, 
-  Calculator, 
-  Shield,
-  Smartphone,
-  Star,
-  Heart,
-  Sparkles,
-  TrendingUp,
-  Globe,
-  CheckCircle,
-  Zap,
-  Award
-} from 'lucide-react-native';
+import { ArrowRight, Users, DollarSign, Calculator, Shield, Smartphone, Star, Heart, Sparkles, TrendingUp, Globe, CircleCheck as CheckCircle, Zap, Award } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width, height } = Dimensions.get('window');
