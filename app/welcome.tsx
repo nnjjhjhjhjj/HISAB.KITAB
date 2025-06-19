@@ -8,7 +8,8 @@ import {
   Animated,
   Easing,
   Dimensions,
-  ImageBackground,
+  Image,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -22,11 +23,14 @@ import {
   Smartphone,
   Star,
   Heart,
-  ChevronRight
+  ChevronRight,
+  ArrowLeft
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width, height } = Dimensions.get('window');
+const isAndroid = Platform.OS === 'android';
 
 export default function WelcomeScreen() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -38,94 +42,98 @@ export default function WelcomeScreen() {
   const slides = [
     {
       id: 1,
-      title: 'Welcome to SplitSaathi',
-      subtitle: 'Smart Expense Sharing for Nepal',
+      title: 'Smart Expense Sharing',
+      subtitle: 'For Nepal',
       description: 'Split bills, track expenses, and settle up with friends and family - all in one beautiful app designed for Nepali users.',
-      icon: <Heart size={80} color="#ffffff" />,
-      color: '#6d28d9',
-      bgColor: '#8b5cf6',
+      icon: <Heart size={64} color="#ffffff" />,
+      color: '#7c3aed',
+      gradient: ['#7c3aed', '#6d28d9'],
+      // image: require('../../assets/images/welcome-1.png'),
     },
     {
       id: 2,
-      title: 'Create Groups Easily',
-      subtitle: 'Organize Your Expenses',
-      description: 'Create groups for trips, roommates, family expenses, or any shared costs. Invite members with a simple link or code.',
-      icon: <Users size={80} color="#ffffff" />,
-      color: '#059669',
-      bgColor: '#10b981',
+      title: 'Create Groups',
+      subtitle: 'Organize Expenses',
+      description: 'Create groups for trips, roommates, or family expenses. Invite members with a simple link or QR code.',
+      icon: <Users size={64} color="#ffffff" />,
+      color: '#10b981',
+      gradient: ['#10b981', '#059669'],
+      // image: require('../../assets/images/welcome-2.png'),
     },
     {
       id: 3,
-      title: 'Smart Expense Splitting',
-      subtitle: 'Fair & Transparent',
-      description: 'Split expenses equally or customize splits by amount, percentage, or shares. Everyone knows exactly what they owe.',
-      icon: <Calculator size={80} color="#ffffff" />,
-      color: '#ea580c',
-      bgColor: '#f97316',
+      title: 'Fair Splits',
+      subtitle: 'Smart Calculations',
+      description: 'Split expenses equally or customize by amount, percentage. Automatic calculations show who owes what.',
+      icon: <Calculator size={64} color="#ffffff" />,
+      color: '#f97316',
+      gradient: ['#f97316', '#ea580c'],
+      // image: require('../../assets/images/welcome-3.png'),
     },
     {
       id: 4,
-      title: 'eSewa Integration',
-      subtitle: 'Seamless Payments',
-      description: 'Settle up instantly with eSewa integration. Send and receive money directly through Nepal\'s most trusted digital wallet.',
-      icon: <Smartphone size={80} color="#ffffff" />,
-      color: '#7c3aed',
-      bgColor: '#8b5cf6',
+      title: 'Digital Payments',
+      subtitle: 'eSewa & Khalti',
+      description: 'Settle up instantly with Nepal\'s top payment platforms through trusted digital wallets.',
+      icon: <Smartphone size={64} color="#ffffff" />,
+      color: '#2563eb',
+      gradient: ['#2563eb', '#1d4ed8'],
+      // image: require('../../assets/images/welcome-4.png'),
     },
     {
       id: 5,
-      title: 'Secure & Private',
-      subtitle: 'Your Data is Safe',
-      description: 'Bank-level security with end-to-end encryption. Your financial data is protected and never shared with third parties.',
-      icon: <Shield size={80} color="#ffffff" />,
+      title: 'Bank-Level',
+      subtitle: 'Security',
+      description: 'End-to-end encryption keeps your financial data safe. We never share your information.',
+      icon: <Shield size={64} color="#ffffff" />,
       color: '#dc2626',
-      bgColor: '#ef4444',
+      gradient: ['#dc2626', '#b91c1c'],
+      // image: require('../../assets/images/welcome-5.png'),
     },
   ];
 
   useEffect(() => {
-    // Initial fade in animation
     Animated.timing(fadeAnim, {
       toValue: 1,
-      duration: 800,
+      duration: 1000,
       easing: Easing.out(Easing.ease),
       useNativeDriver: true,
     }).start();
 
-    // Auto-advance slides
     const interval = setInterval(() => {
       if (!isSliding) {
         goToNextSlide();
       }
-    }, 5000);
+    }, 6000);
 
     return () => clearInterval(interval);
   }, [isSliding]);
 
   useEffect(() => {
-    // Slide transition animation
     Animated.spring(slideAnim, {
       toValue: currentSlide,
-      friction: 20,
-      tension: 70,
+      friction: 15,
+      tension: 60,
       useNativeDriver: true,
     }).start(() => setIsSliding(false));
   }, [currentSlide]);
 
   const goToNextSlide = () => {
+    if (isSliding) return;
     setIsSliding(true);
     setCurrentSlide((prev) => (prev + 1) % slides.length);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const goToPrevSlide = () => {
+    if (isSliding) return;
     setIsSliding(true);
     setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const handleDotPress = (index: number) => {
-    if (index !== currentSlide) {
+    if (index !== currentSlide && !isSliding) {
       setIsSliding(true);
       setCurrentSlide(index);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -136,12 +144,17 @@ export default function WelcomeScreen() {
     Animated.sequence([
       Animated.timing(buttonScale, {
         toValue: 0.95,
-        duration: 100,
+        duration: 80,
+        useNativeDriver: true,
+      }),
+      Animated.timing(buttonScale, {
+        toValue: 1.05,
+        duration: 80,
         useNativeDriver: true,
       }),
       Animated.timing(buttonScale, {
         toValue: 1,
-        duration: 100,
+        duration: 60,
         useNativeDriver: true,
       }),
     ]).start();
@@ -162,22 +175,31 @@ export default function WelcomeScreen() {
 
   const renderSlide = (slide: typeof slides[0], index: number) => (
     <View key={slide.id} style={[styles.slide, { width }]}>
-      <ImageBackground
-        // source={require('../../assets/images/wave-bg.png')}
-        style={[styles.slideBackground, { backgroundColor: slide.bgColor }]}
-        imageStyle={styles.slideBackgroundImage}
+      <LinearGradient
+        colors={slide.gradient}
+        style={styles.slideBackground}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
       >
         <View style={styles.slideContent}>
-          <View style={[styles.iconContainer, { backgroundColor: `${slide.color}40` }]}>
-            {slide.icon}
+          <View style={styles.textContent}>
+            <Text style={styles.slideSubtitle}>{slide.subtitle}</Text>
+            <Text style={styles.slideTitle}>{slide.title}</Text>
+            <Text style={styles.slideDescription}>{slide.description}</Text>
           </View>
-          <Text style={styles.slideTitle}>{slide.title}</Text>
-          <Text style={[styles.slideSubtitle, { color: '#ffffff' }]}>
-            {slide.subtitle}
-          </Text>
-          <Text style={styles.slideDescription}>{slide.description}</Text>
+          
+          <View style={styles.imageContainer}>
+            <Image 
+              source={slide.image} 
+              style={styles.slideImage}
+              resizeMode="contain"
+            />
+            <View style={[styles.iconContainer, { backgroundColor: `${slide.color}40` }]}>
+              {slide.icon}
+            </View>
+          </View>
         </View>
-      </ImageBackground>
+      </LinearGradient>
     </View>
   );
 
@@ -204,11 +226,15 @@ export default function WelcomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            <Text style={styles.logoEmoji}>💸</Text>
+            <View style={[styles.logoCircle, { backgroundColor: slides[currentSlide].color }]}>
+              <Text style={styles.logoEmoji}>💸</Text>
+            </View>
             <Text style={styles.logoText}>SplitSaathi</Text>
           </View>
-          <View style={styles.madeInNepal}>
-            <Text style={styles.madeInNepalText}>Made in Nepal 🇳🇵</Text>
+          <View style={[styles.madeInNepal, { backgroundColor: `${slides[currentSlide].color}15` }]}>
+            <Text style={[styles.madeInNepalText, { color: slides[currentSlide].color }]}>
+              Made in Nepal 🇳🇵
+            </Text>
           </View>
         </View>
 
@@ -232,55 +258,61 @@ export default function WelcomeScreen() {
             {slides.map((slide, index) => renderSlide(slide, index))}
           </Animated.View>
           
-          {currentSlide > 0 && (
-            <TouchableOpacity 
-              style={[styles.navButton, styles.prevButton]} 
-              onPress={goToPrevSlide}
-              activeOpacity={0.7}
-            >
-              <ChevronRight size={24} color="#ffffff" style={{ transform: [{ rotate: '180deg' }] }} />
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity 
+            style={[styles.navButton, styles.prevButton]} 
+            onPress={goToPrevSlide}
+            activeOpacity={0.7}
+          >
+            <ArrowLeft size={24} color="#ffffff" />
+          </TouchableOpacity>
           
-          {currentSlide < slides.length - 1 && (
-            <TouchableOpacity 
-              style={[styles.navButton, styles.nextButton]} 
-              onPress={goToNextSlide}
-              activeOpacity={0.7}
-            >
-              <ChevronRight size={24} color="#ffffff" />
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity 
+            style={[styles.navButton, styles.nextButton]} 
+            onPress={goToNextSlide}
+            activeOpacity={0.7}
+          >
+            <ArrowRight size={24} color="#ffffff" />
+          </TouchableOpacity>
         </View>
 
         {/* Dots Indicator */}
         {renderDots()}
 
         {/* Features Grid */}
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.featuresContainer}
-        >
+        <View style={styles.featuresGrid}>
           {[
-            { icon: <DollarSign size={20} color="#059669" />, text: 'Free to Use' },
-            { icon: <Star size={20} color="#f59e0b" />, text: 'Highly Rated' },
-            { icon: <Shield size={20} color="#7c3aed" />, text: 'Secure' },
-            { icon: <Smartphone size={20} color="#2563eb" />, text: 'eSewa Ready' },
-            { icon: <Users size={20} color="#6d28d9" />, text: 'Group Support' },
+            { icon: <DollarSign size={20} color={slides[currentSlide].color} />, text: 'Free' },
+            { icon: <Star size={20} color={slides[currentSlide].color} />, text: '4.9' },
+            { icon: <Shield size={20} color={slides[currentSlide].color} />, text: 'Secure' },
+            { icon: <Smartphone size={20} color={slides[currentSlide].color} />, text: 'Payments' },
+            { icon: <Users size={20} color={slides[currentSlide].color} />, text: 'Groups' },
           ].map((item, index) => (
-            <View key={index} style={styles.featureItem}>
+            <View 
+              key={index} 
+              style={[
+                styles.featureItem,
+                { backgroundColor: `${slides[currentSlide].color}10` }
+              ]}
+            >
               {item.icon}
-              <Text style={styles.featureText}>{item.text}</Text>
+              <Text style={[styles.featureText, { color: slides[currentSlide].color }]}>
+                {item.text}
+              </Text>
             </View>
           ))}
-        </ScrollView>
+        </View>
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
           <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
             <TouchableOpacity 
-              style={[styles.primaryButton, { backgroundColor: slides[currentSlide].color }]} 
+              style={[
+                styles.primaryButton, 
+                { 
+                  backgroundColor: slides[currentSlide].color,
+                  shadowColor: slides[currentSlide].color,
+                }
+              ]} 
               onPress={handleGetStarted}
               activeOpacity={0.8}
             >
@@ -302,11 +334,11 @@ export default function WelcomeScreen() {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Join thousands of Nepali users who trust SplitSaathi
+          <Text style={[styles.footerText, { color: slides[currentSlide].color }]}>
+            Join thousands of Nepali users
           </Text>
           <Text style={styles.footerSubtext}>
-            Available on Web • iOS • Android
+            Available on Web, iOS & Android
           </Text>
         </View>
       </Animated.View>
@@ -321,58 +353,65 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 16,
+    paddingHorizontal: 24,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 20,
+    paddingTop: isAndroid ? 10 : 24,
     paddingBottom: 16,
   },
   logoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
+  logoCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
   logoEmoji: {
-    fontSize: 28,
-    marginRight: 8,
+    fontSize: 22,
   },
   logoText: {
     fontSize: 24,
     fontWeight: '800',
     color: '#111827',
     fontFamily: 'Inter_700Bold',
+    letterSpacing: -0.5,
   },
   madeInNepal: {
-    backgroundColor: '#fef2f2',
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#fecaca',
+    borderColor: 'rgba(0,0,0,0.05)',
   },
   madeInNepalText: {
     fontSize: 12,
-    color: '#dc2626',
-    fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   slidesContainer: {
-    height: height * 0.45,
+    height: height * 0.50,
     overflow: 'hidden',
     marginBottom: 16,
     borderRadius: 24,
     position: 'relative',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
   },
   slideBackground: {
     flex: 1,
-    padding: 20,
+    padding: 24,
     justifyContent: 'center',
-  },
-  slideBackgroundImage: {
-    opacity: 0.15,
-    resizeMode: 'cover',
   },
   slidesWrapper: {
     flexDirection: 'row',
@@ -384,17 +423,33 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   slideContent: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
-    maxWidth: 300,
-    padding: 20,
+    justifyContent: 'space-between',
   },
-  iconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+  textContent: {
+    flex: 1,
+    paddingRight: 16,
+  },
+  imageContainer: {
+    width: 160,
+    height: 160,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
+    position: 'relative',
+  },
+  slideImage: {
+    width: '100%',
+    height: '100%',
+  },
+  iconContainer: {
+    position: 'absolute',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
@@ -402,35 +457,28 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   slideTitle: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '800',
     color: '#ffffff',
-    textAlign: 'center',
     marginBottom: 8,
     fontFamily: 'Inter_800ExtraBold',
-    textShadowColor: 'rgba(0,0,0,0.2)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    lineHeight: 32,
   },
   slideSubtitle: {
     fontSize: 16,
     fontWeight: '600',
-    textAlign: 'center',
+    color: 'rgba(255,255,255,0.9)',
     marginBottom: 16,
     fontFamily: 'Inter_600SemiBold',
-    textShadowColor: 'rgba(0,0,0,0.2)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   slideDescription: {
-    fontSize: 15,
+    fontSize: 16,
     color: 'rgba(255,255,255,0.9)',
-    textAlign: 'center',
     lineHeight: 24,
     fontFamily: 'Inter_400Regular',
-    textShadowColor: 'rgba(0,0,0,0.2)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    marginTop: 8,
   },
   dotsContainer: {
     flexDirection: 'row',
@@ -446,50 +494,48 @@ const styles = StyleSheet.create({
   },
   activeDot: {
     width: 24,
-    height: 8,
-    borderRadius: 4,
   },
   navButton: {
     position: 'absolute',
     top: '50%',
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(0,0,0,0.2)',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
   },
   prevButton: {
     left: 16,
-    transform: [{ translateY: -22 }],
+    transform: [{ translateY: -24 }],
   },
   nextButton: {
     right: 16,
-    transform: [{ translateY: -22 }],
+    transform: [{ translateY: -24 }],
   },
-  featuresContainer: {
-    paddingHorizontal: 8,
+  featuresGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginBottom: 24,
+    flexWrap: 'wrap',
+    gap: 12,
   },
   featureItem: {
+    flex: 1,
+    minWidth: 60,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
     borderRadius: 12,
-    paddingVertical: 8,
+    paddingVertical: 12,
     paddingHorizontal: 16,
-    marginRight: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
+    justifyContent: 'center',
   },
   featureText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
     marginLeft: 8,
     fontFamily: 'Inter_600SemiBold',
   },
@@ -500,20 +546,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
+    paddingVertical: 18,
     borderRadius: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
+    marginBottom: 14,
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.3,
     shadowRadius: 12,
-    elevation: 8,
   },
   primaryButtonText: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
     color: '#ffffff',
-    marginRight: 8,
+    marginRight: 10,
     fontFamily: 'Inter_600SemiBold',
   },
   secondaryButton: {
@@ -521,23 +565,23 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   secondaryButtonText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
     fontFamily: 'Inter_600SemiBold',
   },
   footer: {
     alignItems: 'center',
-    paddingBottom: 20,
+    paddingBottom: isAndroid ? 10 : 20,
+    marginTop: 'auto',
   },
   footerText: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: 15,
     textAlign: 'center',
-    marginBottom: 4,
-    fontFamily: 'Inter_500Medium',
+    marginBottom: 6,
+    fontFamily: 'Inter_600SemiBold',
   },
   footerSubtext: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#9ca3af',
     textAlign: 'center',
     fontFamily: 'Inter_400Regular',
