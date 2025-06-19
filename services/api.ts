@@ -324,4 +324,17 @@ export const apiService = {
       throw new Error('Failed to create unequal expense');
     }
   },
+
+  async deleteExpense(expenseId: string): Promise<void> {
+    try {
+      console.log('Deleting expense:', expenseId);
+      await api.delete(`/api/expenses/${expenseId}`);
+    } catch (error) {
+      console.error('Delete expense API call failed:', error);
+      if (typeof error === 'object' && error !== null && 'response' in error && typeof (error as any).response === 'object') {
+        throw new Error((error as any).response?.data?.message || 'Failed to delete expense');
+      }
+      throw new Error('Failed to delete expense');
+    }
+  },
 };

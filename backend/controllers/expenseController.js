@@ -25,8 +25,8 @@ exports.createExpense = async (req, res) => {
       return res.status(404).json({ message: 'Group not found' });
     }
 
-    if (group.createdBy.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Not authorized to add expenses to this group' });
+    if (!group.members.includes(req.user.name)) {
+      return res.status(403).json({ message: 'Not authorized: you must be a group member to add expenses' });
     }
 
     // Validate that paidBy and participants are group members
@@ -92,8 +92,26 @@ exports.createUnequalExpense = async (req, res) => {
       return res.status(400).json({ message: 'All required fields must be provided' });
     }
 
-    if (amount <= 0) {
-      return res.status(400).json({ message: 'Amount must be greater than 0' });
+    if (typeof amount !== 'number' || isNaN(amount) || amount <= 0) {
+      return res.status(400).json({ message: 'Amount must be a valid number greater than 0' });
+    }
+
+    // Validate payers if provided
+    if (payers && Array.isArray(payers)) {
+      for (const payer of payers) {
+        if (typeof payer.amountPaid !== 'number' || isNaN(payer.amountPaid)) {
+          return res.status(400).json({ message: `Payer amountPaid for ${payer.name} must be a valid number` });
+        }
+      }
+    }
+
+    // Validate splits if provided
+    if (splits && Array.isArray(splits)) {
+      for (const split of splits) {
+        if (typeof split.amount !== 'number' || isNaN(split.amount)) {
+          return res.status(400).json({ message: `Split amount for ${split.participant} must be a valid number` });
+        }
+      }
     }
 
     // Check if group exists and user has access
@@ -102,8 +120,8 @@ exports.createUnequalExpense = async (req, res) => {
       return res.status(404).json({ message: 'Group not found' });
     }
 
-    if (group.createdBy.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Not authorized to add expenses to this group' });
+    if (!group.members.includes(req.user.name)) {
+      return res.status(403).json({ message: 'Not authorized: you must be a group member to add expenses' });
     }
 
     // Validate payers if provided
@@ -224,6 +242,7 @@ exports.createUnequalExpense = async (req, res) => {
     });
   } catch (error) {
     console.error('Create unequal expense error:', error);
+    if (error && error.stack) console.error(error.stack);
     if (error.name === 'CastError') {
       return res.status(400).json({ message: 'Invalid group ID' });
     }
@@ -242,8 +261,8 @@ exports.getExpensesByGroup = async (req, res) => {
       return res.status(404).json({ message: 'Group not found' });
     }
 
-    if (group.createdBy.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Not authorized to access this group' });
+    if (!group.members.includes(req.user.name)) {
+      return res.status(403).json({ message: 'Not authorized: you must be a group member to access this group' });
     }
 
     // Get expenses for the group
@@ -309,5 +328,32 @@ exports.getAllExpenses = async (req, res) => {
   } catch (error) {
     console.error('Get all expenses error:', error);
     res.status(500).json({ message: 'Server error while fetching expenses' });
+  }
+};
+
+// Delete an expense by ID
+exports.deleteExpense = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const expense = await Expense.findById(id);
+    if (!expense) {
+      return res.status(404).json({ message: 'Expense not found' });
+    }
+    // Find the group to check authorization
+    const group = await Group.findById(expense.groupId);
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found' });
+    }
+    if (!group.members.includes(req.user.name)) {
+      return res.status(403).json({ message: 'Not authorized to delete this expense' });
+    }
+    await Expense.findByIdAndDelete(id);
+    res.json({ success: true, message: 'Expense deleted successfully' });
+  } catch (error) {
+    console.error('Delete expense error:', error);
+    if (error.name === 'CastError') {
+      return res.status(400).json({ message: 'Invalid expense ID' });
+    }
+    res.status(500).json({ message: 'Server error while deleting expense' });
   }
 };

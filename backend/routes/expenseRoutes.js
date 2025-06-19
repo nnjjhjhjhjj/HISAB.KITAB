@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { createExpense, createUnequalExpense, getExpensesByGroup, getAllExpenses } = require('../controllers/expenseController');
+const { createExpense, createUnequalExpense, getExpensesByGroup, getAllExpenses, deleteExpense } = require('../controllers/expenseController');
 const protect = require('../middleware/authMiddleware');
 
 // All expense routes require authentication
@@ -12,5 +12,6 @@ router.post('/add', createExpense); // Alternative endpoint for compatibility
 router.post('/unequal', createUnequalExpense); // New route for unequal expenses
 router.get('/', getAllExpenses);
 router.get('/group/:groupId', getExpensesByGroup);
+router.delete('/:id', deleteExpense);
 
 module.exports = router;

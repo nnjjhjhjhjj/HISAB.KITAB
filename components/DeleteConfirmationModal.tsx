@@ -8,6 +8,7 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { X, Trash2, AlertTriangle } from 'lucide-react-native';
 
@@ -36,6 +37,19 @@ export default function DeleteConfirmationModal({
 }: DeleteConfirmationModalProps) {
   const [confirmationInput, setConfirmationInput] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [fadeAnim] = useState(new Animated.Value(0));
+
+  React.useEffect(() => {
+    if (visible) {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      fadeAnim.setValue(0);
+    }
+  }, [visible]);
 
   const isConfirmationValid = !requiresConfirmation || 
     confirmationInput.trim().toLowerCase() === confirmationText.toLowerCase();
@@ -66,21 +80,24 @@ export default function DeleteConfirmationModal({
   return (
     <Modal
       visible={visible}
-      animationType="fade"
+      animationType="none"
       transparent
       onRequestClose={handleClose}
+      accessible
+      accessibilityViewIsModal
+      accessibilityLabel="Delete Confirmation Modal"
     >
-      <View style={styles.overlay}>
-        <View style={styles.container}>
+      <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}> 
+        <View style={styles.container} accessibilityRole="dialog" aria-modal="true">
           <View style={styles.header}>
             <View style={[styles.iconContainer, isDangerous && styles.dangerIconContainer]}>
               {isDangerous ? (
-                <AlertTriangle size={24} color="#dc2626" />
+                <AlertTriangle size={24} color="#dc2626" accessibilityLabel="Danger" />
               ) : (
-                <Trash2 size={24} color="#6b7280" />
+                <Trash2 size={24} color="#6b7280" accessibilityLabel="Delete" />
               )}
             </View>
-            <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
+            <TouchableOpacity style={styles.closeButton} onPress={handleClose} accessibilityLabel="Close Modal">
               <X size={20} color="#6b7280" />
             </TouchableOpacity>
           </View>
@@ -102,6 +119,8 @@ export default function DeleteConfirmationModal({
                   placeholderTextColor="#9ca3af"
                   autoCapitalize="none"
                   autoCorrect={false}
+                  accessibilityLabel="Confirmation Input"
+                  autoFocus
                 />
               </View>
             )}
@@ -120,6 +139,7 @@ export default function DeleteConfirmationModal({
               style={styles.cancelButton}
               onPress={handleClose}
               disabled={isDeleting}
+              accessibilityLabel="Cancel"
             >
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
@@ -129,9 +149,12 @@ export default function DeleteConfirmationModal({
                 styles.confirmButton,
                 isDangerous && styles.dangerButton,
                 (!isConfirmationValid || isDeleting) && styles.disabledButton,
+                isDangerous && { shadowColor: '#dc2626', shadowOpacity: 0.3, shadowRadius: 6, elevation: 6 },
               ]}
               onPress={handleConfirm}
               disabled={!isConfirmationValid || isDeleting}
+              accessibilityLabel={confirmText}
+              accessibilityRole="button"
             >
               {isDeleting ? (
                 <ActivityIndicator size="small" color="#ffffff" />
@@ -144,7 +167,7 @@ export default function DeleteConfirmationModal({
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </Animated.View>
     </Modal>
   );
 }

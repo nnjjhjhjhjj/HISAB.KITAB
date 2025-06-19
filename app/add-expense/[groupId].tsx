@@ -16,7 +16,7 @@ import { Group } from '@/types';
 import { apiService } from '@/services/api';
 
 export default function AddExpenseScreen() {
-  const { groupId } = useLocalSearchParams<{ groupId: string }>();
+  const { groupId } = useLocalSearchParams<{ groupId?: string }>();
   const [group, setGroup] = useState<Group | null>(null);
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
@@ -25,6 +25,14 @@ export default function AddExpenseScreen() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (groupId) {
+      router.replace({ pathname: '/add-expense-advanced', params: { groupId } });
+    } else {
+      router.replace('/add-expense-advanced');
+    }
+  }, [groupId]);
 
   useEffect(() => {
     const fetchGroup = async () => {
