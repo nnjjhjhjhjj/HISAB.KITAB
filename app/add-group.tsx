@@ -16,53 +16,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Plus, X, Users, ArrowLeft, Play, Link, Share2 } from 'lucide-react-native';
-
-const apiService = {
-  createGroup: async (groupData: any) => {
-    // Simulate API call and return a mock group ID
-    return new Promise<string>(resolve => 
-      setTimeout(() => resolve(`GRP_${Math.random().toString(36).substring(2, 10)}`), 1500)
-    );
-  }
-};
-
-const limitService = {
-  canCreateGroup: async () => {
-    return {
-      canAdd: true,
-      remaining: 3,
-      needsAd: false
-    };
-  },
-  incrementGroups: async () => {},
-  addGroupBonus: async () => {}
-};
-
-const AdModal = ({ visible, onClose, onAdWatched }: any) => {
-  if (!visible) return null;
-  
-  return (
-    <View style={styles.adModalOverlay}>
-      <View style={styles.adModal}>
-        <Text style={styles.adModalTitle}>Watch a Short Ad</Text>
-        <Text style={styles.adModalText}>Watch a 30-second ad to create one additional group today.</Text>
-        
-        <View style={styles.adPlaceholder}>
-          <Text style={styles.adPlaceholderText}>Ad Content Here</Text>
-        </View>
-        
-        <View style={styles.adModalButtons}>
-          <TouchableOpacity style={styles.adModalButtonSecondary} onPress={onClose}>
-            <Text style={styles.adModalButtonSecondaryText}>Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.adModalButtonPrimary} onPress={onAdWatched}>
-            <Text style={styles.adModalButtonPrimaryText}>Watch Now</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
-  );
-};
+import { apiService } from '@/services/api';
+import { limitService } from '@/services/limitService';
+import AdModal from '@/components/AdModal';
 
 export default function AddGroupScreen() {
   const [groupName, setGroupName] = useState('');
@@ -73,6 +29,7 @@ export default function AddGroupScreen() {
   const [canCreateGroup, setCanCreateGroup] = useState(true);
   const [remainingGroups, setRemainingGroups] = useState(0);
   const [shareableLink, setShareableLink] = useState<string | null>(null);
+  const [createdGroup, setCreatedGroup] = useState<any>(null);
 
   useEffect(() => {
     const checkLimits = async () => {
@@ -102,7 +59,6 @@ export default function AddGroupScreen() {
   };
 
   const generateShareLink = (groupId: string) => {
-    // Use Railway domain for the share link
     return `https://splitsaathi.up.railway.app/join/${groupId}`;
   };
 
@@ -132,6 +88,7 @@ export default function AddGroupScreen() {
     setDescription('');
     setMembers(['']);
     setShareableLink(null);
+    setCreatedGroup(null);
   };
 
   const handleCreateGroup = async () => {
@@ -163,15 +120,18 @@ export default function AddGroupScreen() {
       // Filter out empty member names
       const validMembers = members.filter(member => member.trim() !== '');
       
-      // Create group and get group ID
-      const groupId = await apiService.createGroup({
+      // Create group and get full group object
+      const newGroup = await apiService.createGroup({
         name: groupName.trim(),
         description: description.trim(),
         members: validMembers,
       });
 
-      // Generate shareable link with Railway domain
-      const link = generateShareLink(groupId);
+      console.log('Created group:', newGroup);
+
+      // Set the created group and generate shareable link
+      setCreatedGroup(newGroup);
+      const link = generateShareLink(newGroup.id);
       setShareableLink(link);
 
       // Increment group count
@@ -194,6 +154,20 @@ export default function AddGroupScreen() {
     setShowAdModal(false);
   };
 
+  const handleGoToGroup = () => {
+    if (createdGroup) {
+      // Navigate to the newly created group
+      router.replace(`/group/${createdGroup.id}`);
+    } else {
+      // Go back to groups list
+      router.replace('/(tabs)/groups');
+    }
+  };
+
+  const handleCreateAnother = () => {
+    resetForm();
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -201,7 +175,7 @@ export default function AddGroupScreen() {
           style={styles.backButton}
           onPress={() => {
             if (shareableLink) {
-              resetForm();
+              router.replace('/(tabs)/groups');
             } else {
               router.back();
             }
@@ -285,6 +259,25 @@ export default function AddGroupScreen() {
               </View>
               <Text style={styles.stepText}>Start adding expenses to your group</Text>
             </View>
+          </View>
+
+          {/* Action Buttons */}
+          <View style={styles.actionButtons}>
+            <TouchableOpacity 
+              style={styles.primaryActionButton}
+              onPress={handleGoToGroup}
+            >
+              <Users size={20} color="#ffffff" />
+              <Text style={styles.primaryActionButtonText}>Go to Group</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.secondaryActionButton}
+              onPress={handleCreateAnother}
+            >
+              <Plus size={20} color="#4f46e5" />
+              <Text style={styles.secondaryActionButtonText}>Create Another Group</Text>
+            </TouchableOpacity>
           </View>
         </View>
       ) : (
@@ -698,81 +691,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#ffffff',
   },
-  // Ad Modal Styles
-  adModalOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
-  },
-  adModal: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 25,
-    width: '85%',
-    maxWidth: 400,
-  },
-  adModalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1e293b',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  adModalText: {
-    fontSize: 15,
-    color: '#64748b',
-    textAlign: 'center',
-    marginBottom: 20,
-    lineHeight: 22,
-  },
-  adPlaceholder: {
-    backgroundColor: '#e2e8f0',
-    height: 180,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  adPlaceholderText: {
-    color: '#64748b',
-    fontSize: 16,
-  },
-  adModalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  adModalButtonSecondary: {
-    flex: 1,
-    backgroundColor: '#f1f5f9',
-    padding: 14,
-    borderRadius: 12,
-    marginRight: 10,
-    alignItems: 'center',
-  },
-  adModalButtonSecondaryText: {
-    color: '#64748b',
-    fontWeight: '600',
-    fontSize: 15,
-  },
-  adModalButtonPrimary: {
-    flex: 1,
-    backgroundColor: '#4f46e5',
-    padding: 14,
-    borderRadius: 12,
-    marginLeft: 10,
-    alignItems: 'center',
-  },
-  adModalButtonPrimaryText: {
-    color: '#ffffff',
-    fontWeight: '600',
-    fontSize: 15,
-  },
   // Link sharing styles
   linkContainer: {
     flex: 1,
@@ -843,6 +761,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 16,
     padding: 20,
+    marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -878,5 +797,43 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#334155',
     lineHeight: 22,
+  },
+  actionButtons: {
+    gap: 12,
+  },
+  primaryActionButton: {
+    backgroundColor: '#4f46e5',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 14,
+    shadowColor: '#4f46e5',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  primaryActionButtonText: {
+    marginLeft: 10,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  secondaryActionButton: {
+    backgroundColor: '#ffffff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: '#4f46e5',
+  },
+  secondaryActionButtonText: {
+    marginLeft: 10,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#4f46e5',
   },
 });

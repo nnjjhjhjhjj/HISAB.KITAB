@@ -219,13 +219,21 @@ export const apiService = {
     }
   },
 
-  async createGroup(group: Omit<Group, 'id' | 'createdAt' | 'totalExpenses' | 'balances'>): Promise<Group> {
+  async createGroup(group: Omit<Group, 'id' | 'createdAt' | 'totalExpenses' | 'balances' | 'inviteCode' | 'inviteLink'>): Promise<Group> {
     try {
       console.log('Creating group:', group);
       const response = await api.post('/api/groups', group);
       console.log('Create group response:', response.data);
       
-      return response.data.data || response.data;
+      // Return the full group object from the response
+      const createdGroup = response.data.data || response.data;
+      
+      // Ensure we have all required properties
+      if (!createdGroup.id) {
+        throw new Error('Invalid response: missing group ID');
+      }
+      
+      return createdGroup;
     } catch (error) {
       console.error('Create group API call failed:', error);
       if (typeof error === 'object' && error !== null && 'response' in error && typeof (error as any).response === 'object') {

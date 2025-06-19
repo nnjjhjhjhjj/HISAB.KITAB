@@ -9,10 +9,41 @@ import {
   Switch,
   Alert,
   ActivityIndicator,
+  Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { User, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Mail, CreditCard, Download } from 'lucide-react-native';
+import { 
+  User, 
+  Settings, 
+  Bell, 
+  Shield, 
+  CircleHelp as HelpCircle, 
+  LogOut, 
+  ChevronRight, 
+  Mail, 
+  Phone, 
+  CreditCard as Edit3, 
+  DollarSign, 
+  Users, 
+  Receipt, 
+  Star, 
+  Camera, 
+  Moon, 
+  Globe, 
+  CreditCard, 
+  Download, 
+  Share2,
+  Trash2,
+  Lock,
+  Eye,
+  Gift,
+  Award,
+  TrendingUp,
+  Calendar,
+  Smartphone,
+  Heart
+} from 'lucide-react-native';
 import { apiService } from '@/services/api';
 import { User as UserType } from '@/types';
 
@@ -25,6 +56,9 @@ export default function ProfileScreen() {
     totalGroups: 0,
     totalExpenses: 0,
     totalTransactions: 0,
+    monthlySpending: 0,
+    averageExpense: 0,
+    mostActiveGroup: '',
   });
 
   useEffect(() => {
@@ -43,10 +77,33 @@ export default function ProfileScreen() {
       setUser(userProfile);
       
       const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      
+      const monthlyExpenses = expenses.filter(expense => {
+        const expenseDate = new Date(expense.createdAt);
+        return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
+      });
+      
+      const monthlySpending = monthlyExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+      const averageExpense = expenses.length > 0 ? totalExpenses / expenses.length : 0;
+      
+      // Find most active group
+      const groupExpenseCounts = groups.map(group => ({
+        name: group.name,
+        count: expenses.filter(expense => expense.groupId === group.id).length
+      }));
+      const mostActiveGroup = groupExpenseCounts.reduce((prev, current) => 
+        prev.count > current.count ? prev : current, { name: 'None', count: 0 }
+      );
+
       setStats({
         totalGroups: groups.length,
         totalExpenses: totalExpenses,
         totalTransactions: expenses.length,
+        monthlySpending,
+        averageExpense,
+        mostActiveGroup: mostActiveGroup.name,
       });
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -82,6 +139,56 @@ export default function ProfileScreen() {
     router.push('/profile/change-password');
   };
 
+  const handleNotificationSettings = () => {
+    router.push('/profile/notifications');
+  };
+
+  const handlePrivacySettings = () => {
+    router.push('/profile/privacy');
+  };
+
+  const handleAppSettings = () => {
+    router.push('/profile/settings');
+  };
+
+  const handleHelp = () => {
+    router.push('/profile/help');
+  };
+
+  const handleAbout = () => {
+    router.push('/profile/about');
+  };
+
+  const handleExportData = () => {
+    router.push('/profile/export-data');
+  };
+
+  const handleDeleteAccount = () => {
+    router.push('/profile/delete-account');
+  };
+
+  const handleShareApp = async () => {
+    try {
+      await Share.share({
+        message: 'Check out SplitSaathi - the best app for splitting expenses with friends! Download it now: https://splitsaathi.up.railway.app',
+        title: 'Share SplitSaathi'
+      });
+    } catch (error) {
+      Alert.alert('Error', 'Failed to share app');
+    }
+  };
+
+  const handleRateApp = () => {
+    Alert.alert(
+      'Rate SplitSaathi',
+      'Thank you for using SplitSaathi! Would you like to rate us on the app store?',
+      [
+        { text: 'Later', style: 'cancel' },
+        { text: 'Rate Now', onPress: () => Alert.alert('Thank you!', 'This would open the app store rating page.') }
+      ]
+    );
+  };
+
   const renderSettingItem = (
     icon: React.ReactNode,
     title: string,
@@ -109,14 +216,27 @@ export default function ProfileScreen() {
     </TouchableOpacity>
   );
 
-  const renderStatsCard = (icon: React.ReactNode, label: string, value: string | number) => (
+  const renderStatsCard = (icon: React.ReactNode, label: string, value: string | number, color: string = '#2563eb') => (
     <View style={styles.statsCard}>
-      <View style={styles.statsIcon}>
-        {icon}
+      <View style={[styles.statsIcon, { backgroundColor: `${color}20` }]}>
+        {React.cloneElement(icon as React.ReactElement, { color })}
       </View>
       <Text style={styles.statsValue}>{value}</Text>
       <Text style={styles.statsLabel}>{label}</Text>
     </View>
+  );
+
+  const renderQuickAction = (icon: React.ReactNode, title: string, subtitle: string, onPress: () => void, color: string = '#2563eb') => (
+    <TouchableOpacity style={styles.quickActionCard} onPress={onPress}>
+      <View style={[styles.quickActionIcon, { backgroundColor: `${color}20` }]}>
+        {React.cloneElement(icon as React.ReactElement, { color })}
+      </View>
+      <View style={styles.quickActionContent}>
+        <Text style={styles.quickActionTitle}>{title}</Text>
+        <Text style={styles.quickActionSubtitle}>{subtitle}</Text>
+      </View>
+      <ChevronRight size={16} color="#9ca3af" />
+    </TouchableOpacity>
   );
 
   if (loading) {
@@ -137,7 +257,7 @@ export default function ProfileScreen() {
         <View style={styles.header}>
           <Text style={styles.title}>Profile</Text>
           <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
-            <User size={20} color="#2563eb" />
+            <Edit3 size={20} color="#2563eb" />
           </TouchableOpacity>
         </View>
 
@@ -145,41 +265,110 @@ export default function ProfileScreen() {
         <View style={styles.profileCard}>
           <View style={styles.avatarContainer}>
             <Image 
-              source={{ uri: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=400' }} 
+              source={{ uri: user?.picture || 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=400' }} 
               style={styles.avatar} 
             />
+            <TouchableOpacity style={styles.cameraButton}>
+              <Camera size={16} color="#ffffff" />
+            </TouchableOpacity>
           </View>
           <View style={styles.profileInfo}>
             <Text style={styles.userName}>{user?.name || 'User Name'}</Text>
             <Text style={styles.userEmail}>{user?.email || 'user@example.com'}</Text>
+            <Text style={styles.joinDate}>Member since January 2024</Text>
+          </View>
+          
+          {/* Achievement Badge */}
+          <View style={styles.achievementBadge}>
+            <Award size={16} color="#f59e0b" />
+            <Text style={styles.achievementText}>Active User</Text>
           </View>
         </View>
 
-        {/* Stats Section */}
+        {/* Enhanced Stats Section */}
         <View style={styles.statsSection}>
           <Text style={styles.sectionTitle}>Your Activity</Text>
           <View style={styles.statsGrid}>
             {renderStatsCard(
-              <User size={20} color="#2563eb" />,
+              <Users size={20} />,
               'Groups',
-              stats.totalGroups
+              stats.totalGroups,
+              '#2563eb'
             )}
             {renderStatsCard(
-              <CreditCard size={20} color="#059669" />,
-              'Total Expenses',
-              `₹${stats.totalExpenses.toFixed(2)}`
+              <DollarSign size={20} />,
+              'Total Spent',
+              `$${stats.totalExpenses.toFixed(0)}`,
+              '#059669'
             )}
             {renderStatsCard(
-              <Download size={20} color="#ea580c" />,
+              <Receipt size={20} />,
               'Transactions',
-              stats.totalTransactions
+              stats.totalTransactions,
+              '#ea580c'
+            )}
+          </View>
+          
+          <View style={styles.statsGrid}>
+            {renderStatsCard(
+              <TrendingUp size={20} />,
+              'This Month',
+              `$${stats.monthlySpending.toFixed(0)}`,
+              '#7c3aed'
+            )}
+            {renderStatsCard(
+              <Calendar size={20} />,
+              'Avg. Expense',
+              `$${stats.averageExpense.toFixed(0)}`,
+              '#dc2626'
+            )}
+            {renderStatsCard(
+              <Star size={20} />,
+              'Most Active',
+              stats.mostActiveGroup || 'None',
+              '#f59e0b'
+            )}
+          </View>
+        </View>
+
+        {/* Quick Actions */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <View style={styles.quickActionsGrid}>
+            {renderQuickAction(
+              <Download size={20} />,
+              'Export Data',
+              'Download your expense data',
+              handleExportData,
+              '#059669'
+            )}
+            {renderQuickAction(
+              <Share2 size={20} />,
+              'Share App',
+              'Invite friends to SplitSaathi',
+              handleShareApp,
+              '#7c3aed'
+            )}
+            {renderQuickAction(
+              <Star size={20} />,
+              'Rate App',
+              'Help us improve',
+              handleRateApp,
+              '#f59e0b'
+            )}
+            {renderQuickAction(
+              <Gift size={20} />,
+              'Refer Friends',
+              'Earn rewards',
+              () => Alert.alert('Coming Soon', 'Referral program coming soon!'),
+              '#ec4899'
             )}
           </View>
         </View>
 
         {/* Account Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account Settings</Text>
+          <Text style={styles.sectionTitle}>Account</Text>
           <View style={styles.settingsGroup}>
             {renderSettingItem(
               <User size={20} color="#6b7280" />,
@@ -190,13 +379,20 @@ export default function ProfileScreen() {
             {renderSettingItem(
               <Mail size={20} color="#6b7280" />,
               'Email',
-              user?.email || 'user@example.com'
+              user?.email || 'user@example.com',
+              handleEditProfile
             )}
             {renderSettingItem(
-              <Shield size={20} color="#6b7280" />,
+              <Lock size={20} color="#6b7280" />,
               'Change Password',
               'Update your account password',
               handleChangePassword
+            )}
+            {renderSettingItem(
+              <CreditCard size={20} color="#6b7280" />,
+              'Payment Methods',
+              'Manage eSewa and bank accounts',
+              () => router.push('/profile/payment-methods')
             )}
           </View>
         </View>
@@ -208,8 +404,8 @@ export default function ProfileScreen() {
             {renderSettingItem(
               <Bell size={20} color="#6b7280" />,
               'Notifications',
-              'Push notifications for expenses',
-              undefined,
+              'Push notifications and alerts',
+              handleNotificationSettings,
               <Switch
                 value={notificationsEnabled}
                 onValueChange={setNotificationsEnabled}
@@ -219,7 +415,7 @@ export default function ProfileScreen() {
               false
             )}
             {renderSettingItem(
-              <Settings size={20} color="#6b7280" />,
+              <Moon size={20} color="#6b7280" />,
               'Dark Mode',
               'Switch to dark theme',
               undefined,
@@ -231,18 +427,42 @@ export default function ProfileScreen() {
               />,
               false
             )}
+            {renderSettingItem(
+              <Globe size={20} color="#6b7280" />,
+              'Language & Region',
+              'English (Nepal)',
+              handleAppSettings
+            )}
+            {renderSettingItem(
+              <Settings size={20} color="#6b7280" />,
+              'App Settings',
+              'Currency, date format, and more',
+              handleAppSettings
+            )}
           </View>
         </View>
 
-        {/* Data Section */}
+        {/* Data & Privacy */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Data</Text>
+          <Text style={styles.sectionTitle}>Data & Privacy</Text>
           <View style={styles.settingsGroup}>
+            {renderSettingItem(
+              <Shield size={20} color="#6b7280" />,
+              'Privacy Settings',
+              'Control your data and privacy',
+              handlePrivacySettings
+            )}
             {renderSettingItem(
               <Download size={20} color="#6b7280" />,
               'Export Data',
               'Download your data as CSV',
-              () => Alert.alert('Export Data', 'Feature coming soon')
+              handleExportData
+            )}
+            {renderSettingItem(
+              <Eye size={20} color="#6b7280" />,
+              'Data Usage',
+              'See how your data is used',
+              () => Alert.alert('Data Usage', 'Your data is used only for app functionality and is never shared with third parties.')
             )}
           </View>
         </View>
@@ -253,15 +473,63 @@ export default function ProfileScreen() {
           <View style={styles.settingsGroup}>
             {renderSettingItem(
               <HelpCircle size={20} color="#6b7280" />,
-              'Help Center',
-              'Get help with the app'
+              'Help & Support',
+              'Get help with SplitSaathi',
+              handleHelp
+            )}
+            {renderSettingItem(
+              <Smartphone size={20} color="#6b7280" />,
+              'Contact Us',
+              'Get in touch with our team',
+              () => Alert.alert('Contact Us', 'Email: support@splitsaathi.com\nPhone: +977-98-00000000')
+            )}
+            {renderSettingItem(
+              <Star size={20} color="#6b7280" />,
+              'Rate the App',
+              'Share your feedback',
+              handleRateApp
+            )}
+            {renderSettingItem(
+              <Share2 size={20} color="#6b7280" />,
+              'Share SplitSaathi',
+              'Invite friends to use the app',
+              handleShareApp
             )}
           </View>
         </View>
 
-        {/* Logout Section */}
+        {/* About Section */}
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>About</Text>
           <View style={styles.settingsGroup}>
+            {renderSettingItem(
+              <Settings size={20} color="#6b7280" />,
+              'About SplitSaathi',
+              'Version 1.0.0',
+              handleAbout
+            )}
+            {renderSettingItem(
+              <Heart size={20} color="#6b7280" />,
+              'Made in Nepal',
+              'Built with love in Nepal 🇳🇵',
+              handleAbout
+            )}
+          </View>
+        </View>
+
+        {/* Danger Zone */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Danger Zone</Text>
+          <View style={styles.settingsGroup}>
+            {renderSettingItem(
+              <Trash2 size={20} color="#dc2626" />,
+              'Delete Account',
+              'Permanently delete your account',
+              handleDeleteAccount,
+              undefined,
+              true,
+              true
+            )}
             {renderSettingItem(
               <LogOut size={20} color="#dc2626" />,
               'Logout',
@@ -276,7 +544,9 @@ export default function ProfileScreen() {
 
         {/* App Version */}
         <View style={styles.versionContainer}>
-          <Text style={styles.versionText}>Hisab Kitab v1.0.0</Text>
+          <Text style={styles.versionText}>SplitSaathi v1.0.0</Text>
+          <Text style={styles.versionSubtext}>Made with ❤️ in Nepal 🇳🇵</Text>
+          <Text style={styles.versionSubtext}>© 2024 SplitSaathi. All rights reserved.</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -345,8 +615,22 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
   },
+  cameraButton: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#2563eb',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#ffffff',
+  },
   profileInfo: {
     alignItems: 'center',
+    marginBottom: 12,
   },
   userName: {
     fontSize: 24,
@@ -358,6 +642,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6b7280',
     marginBottom: 4,
+  },
+  joinDate: {
+    fontSize: 14,
+    color: '#9ca3af',
+  },
+  achievementBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fef3c7',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#fbbf24',
+  },
+  achievementText: {
+    marginLeft: 6,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#92400e',
   },
   statsSection: {
     paddingHorizontal: 20,
@@ -372,6 +676,7 @@ const styles = StyleSheet.create({
   statsGrid: {
     flexDirection: 'row',
     gap: 12,
+    marginBottom: 12,
   },
   statsCard: {
     flex: 1,
@@ -389,7 +694,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#f8fafc',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
@@ -408,6 +712,42 @@ const styles = StyleSheet.create({
   section: {
     paddingHorizontal: 20,
     marginBottom: 24,
+  },
+  quickActionsGrid: {
+    gap: 8,
+  },
+  quickActionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  quickActionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  quickActionContent: {
+    flex: 1,
+  },
+  quickActionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 2,
+  },
+  quickActionSubtitle: {
+    fontSize: 14,
+    color: '#6b7280',
   },
   settingsGroup: {
     backgroundColor: '#ffffff',
@@ -463,5 +803,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#9ca3af',
     marginBottom: 4,
+  },
+  versionSubtext: {
+    fontSize: 12,
+    color: '#d1d5db',
+    marginBottom: 2,
   },
 });

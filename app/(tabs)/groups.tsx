@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Users, DollarSign, TrendingUp, TrendingDown, Plus } from 'lucide-react-native';
 import { Group } from '@/types';
 import { apiService } from '@/services/api';
@@ -24,6 +24,7 @@ export default function GroupsScreen() {
     try {
       setError(null);
       const fetchedGroups = await apiService.getGroups();
+      console.log('Fetched groups:', fetchedGroups);
       setGroups(fetchedGroups);
     } catch (err) {
       setError('Failed to load groups. Please try again.');
@@ -38,6 +39,13 @@ export default function GroupsScreen() {
     await fetchGroups();
     setRefreshing(false);
   };
+
+  // Use useFocusEffect to refresh when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchGroups();
+    }, [])
+  );
 
   useEffect(() => {
     fetchGroups();
