@@ -113,7 +113,7 @@ export default function AddAdvancedExpenseScreen() {
   const handleSplitType = (type: any) => {
     setSplitType(type);
     if (!selectedGroup) return;
-    const total = parseFloat(totalAmount) || 0;
+      const total = parseFloat(totalAmount) || 0;
     if (type === 'equal') {
       const per = total / selectedGroup.members.length;
       setParticipants(selectedGroup.members.map(m => ({ name: m, share: per ? per.toFixed(2) : '' })));
@@ -229,9 +229,9 @@ export default function AddAdvancedExpenseScreen() {
             <Text style={styles.groupModalCloseText}>Cancel</Text>
           </TouchableOpacity>
         </View>
-      </View>
+        </View>
     </Modal>
-  );
+    );
 
   if (loading) {
     return (
@@ -249,7 +249,7 @@ export default function AddAdvancedExpenseScreen() {
           <ArrowLeft size={24} color="#374151" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Add Expense</Text>
-      </View>
+        </View>
       {/* Group Selector (modal dropdown style) */}
       <TouchableOpacity style={styles.groupSelectorCard} onPress={() => setGroupModalVisible(true)} activeOpacity={0.85}>
         <View style={styles.groupSelectorRow}>
@@ -260,7 +260,7 @@ export default function AddAdvancedExpenseScreen() {
             {selectedGroup && selectedGroup.members.length > 3 && (
               <View style={styles.groupSelectorAvatar}><Text style={styles.groupSelectorAvatarText}>+{selectedGroup.members.length - 3}</Text></View>
             )}
-          </View>
+        </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.groupSelectorName}>{selectedGroup?.name || 'Select Group'}</Text>
             <Text style={styles.groupSelectorMembers}>{selectedGroup?.members.length || 0} members</Text>
@@ -295,46 +295,46 @@ export default function AddAdvancedExpenseScreen() {
             <Calendar size={18} color="#6b7280" />
             <Text style={styles.dateText}>{date}</Text>
             <Text style={styles.dateEdit}>Edit</Text>
-          </TouchableOpacity>
+                </TouchableOpacity>
           {formErrors.description && <Text style={styles.errorText}>{formErrors.description}</Text>}
           {formErrors.totalAmount && <Text style={styles.errorText}>{formErrors.totalAmount}</Text>}
-        </View>
+              </View>
         {/* Who Paid (vertical column) */}
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Who paid?</Text>
           <View style={styles.payerColumn}>
             {payers.map((payer, idx) => (
               <View key={idx} style={styles.payerPillRowCol}>
-                <TouchableOpacity
+                        <TouchableOpacity
                   style={styles.payerPill}
                   onPress={() => {}}
                   activeOpacity={1}
                 >
                   <View style={styles.avatar}><Text style={styles.avatarText}>{getInitials(payer.name)}</Text></View>
                   <Text style={styles.payerName}>{payer.name}</Text>
-                </TouchableOpacity>
-                <TextInput
-                  style={styles.payerAmountInput}
+                        </TouchableOpacity>
+                    <TextInput
+                      style={styles.payerAmountInput}
                   value={payer.amountPaid}
                   onChangeText={v => handlePayerAmount(idx, v)}
                   placeholder="$0.00"
-                  keyboardType="decimal-pad"
+                      keyboardType="decimal-pad"
                   maxLength={10}
-                />
-                {payers.length > 1 && (
+                    />
+                  {payers.length > 1 && (
                   <TouchableOpacity style={styles.removePayerBtn} onPress={() => handleRemovePayer(idx)}>
-                    <Minus size={16} color="#dc2626" />
-                  </TouchableOpacity>
-                )}
-              </View>
-            ))}
+                      <Minus size={16} color="#dc2626" />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ))}
             {selectedGroup && payers.length < selectedGroup.members.length && (
               <TouchableOpacity style={styles.addPayerBtnCol} onPress={handleAddPayer}>
                 <Plus size={20} color="#2563eb" />
                 <Text style={styles.addPayerBtnColText}>Add payer</Text>
-              </TouchableOpacity>
+                </TouchableOpacity>
             )}
-          </View>
+              </View>
           {/* Remaining amount display */}
           {(() => {
             const total = parseFloat(totalAmount) || 0;
@@ -347,7 +347,7 @@ export default function AddAdvancedExpenseScreen() {
               <View style={{ marginTop: 6, marginBottom: 2, flexDirection: 'row', alignItems: 'center' }}>
                 <Text style={{ fontSize: 14, color: '#6b7280', fontWeight: '500', marginRight: 6 }}>Remaining:</Text>
                 <Text style={{ fontSize: 15, fontWeight: '700', color }}>{remaining >= 0 ? `$${remaining.toFixed(2)}` : `-$${Math.abs(remaining).toFixed(2)}`}</Text>
-              </View>
+            </View>
             );
           })()}
           {formErrors.paid && <Text style={styles.errorText}>{formErrors.paid}</Text>}
@@ -358,18 +358,18 @@ export default function AddAdvancedExpenseScreen() {
             {SPLIT_METHODS.map(method => {
               const Icon = method.icon;
               return (
-                <TouchableOpacity
+                  <TouchableOpacity
                   key={method.key}
                   style={[styles.segmentBtn, splitType === method.key && styles.segmentBtnActive]}
                   onPress={() => handleSplitType(method.key)}
-                >
+                  >
                   <Icon size={18} color={splitType === method.key ? '#fff' : '#2563eb'} />
                   <Text style={[styles.segmentBtnText, splitType === method.key && styles.segmentBtnTextActive]}>{method.label}</Text>
-                </TouchableOpacity>
+                  </TouchableOpacity>
               );
             })}
-          </View>
-        </View>
+              </View>
+                    </View>
         {/* Participants List */}
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Split between</Text>
@@ -380,28 +380,28 @@ export default function AddAdvancedExpenseScreen() {
               <View style={styles.participantRow}>
                 <View style={styles.avatar}><Text style={styles.avatarText}>{getInitials(item.name)}</Text></View>
                 <Text style={styles.participantName}>{item.name}</Text>
-                <TextInput
+                        <TextInput
                   style={styles.participantShareInput}
                   value={item.share}
                   onChangeText={v => handleParticipantShare(index, v)}
                   placeholder={splitType === 'percentage' ? '% share' : splitType === 'shares' ? 'shares' : '$0.00'}
-                  keyboardType="decimal-pad"
+                          keyboardType="decimal-pad"
                   maxLength={10}
                   editable={splitType !== 'equal' ? true : false}
-                />
-              </View>
-            )}
+                        />
+                      </View>
+                    )}
           />
-        </View>
+                      </View>
         {/* Summary Card */}
         <View style={styles.summaryCard}>
           <Text style={styles.summaryText}>Total paid: <Text style={{ fontWeight: '700' }}>${getTotalPaid().toFixed(2)}</Text></Text>
           <Text style={styles.summaryText}>
             {splitType === 'percentage' ? 'Total %: ' : splitType === 'shares' ? 'Total shares: ' : 'Total split: '}
             <Text style={{ fontWeight: '700' }}>{getTotalSplit().toFixed(2)}{splitType === 'percentage' ? '%' : ''}</Text>
-          </Text>
+                  </Text>
           {formErrors.split && <Text style={styles.errorText}>{formErrors.split}</Text>}
-        </View>
+                </View>
       </ScrollView>
       {/* Date Picker Modal */}
       {datePickerVisible && (

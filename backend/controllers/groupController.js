@@ -4,7 +4,7 @@ const Expense = require('../models/Expense');
 // Create a new group
 exports.createGroup = async (req, res) => {
   try {
-    const { name, description, members } = req.body;
+    const { name, description, members, emoji } = req.body;
 
     // Validation
     if (!name || !name.trim()) {
@@ -28,6 +28,7 @@ exports.createGroup = async (req, res) => {
       description: description ? description.trim() : '',
       createdBy: req.user._id,
       members: validMembers.map(member => member.trim()),
+      emoji: emoji ? emoji.trim() : '',
     });
 
     const savedGroup = await group.save();
@@ -43,6 +44,7 @@ exports.createGroup = async (req, res) => {
         name: savedGroup.name,
         description: savedGroup.description,
         members: savedGroup.members,
+        emoji: savedGroup.emoji,
         totalExpenses: 0,
         balances: {},
         inviteCode: savedGroup.inviteCode,
@@ -166,9 +168,32 @@ exports.deleteGroup = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to delete this group' });
     }
 
+    // Get all expenses for this group
+    const expenses = await Expense.find({ groupId: id });
+    // Calculate balances
+    const balances = {};
+    group.members.forEach(member => {
+      balances[member] = 0;
+    });
+    expenses.forEach(expense => {
+      const splitAmount = expense.amount / expense.participants.length;
+      if (balances.hasOwnProperty(expense.paidBy)) {
+        balances[expense.paidBy] += expense.amount;
+      }
+      expense.participants.forEach(participant => {
+        if (balances.hasOwnProperty(participant)) {
+          balances[participant] -= splitAmount;
+        }
+      });
+    });
+    // Check if all balances are zero (settled)
+    const unsettled = Object.values(balances).some(balance => Math.abs(balance) > 0.01);
+    if (unsettled) {
+      return res.status(400).json({ message: 'Cannot delete group: all balances must be settled (zero) before deletion.' });
+    }
+
     // Delete all expenses associated with the group
     await Expense.deleteMany({ groupId: id });
-
     // Delete the group
     await Group.findByIdAndDelete(id);
 

@@ -46,6 +46,8 @@ import {
 } from 'lucide-react-native';
 import { apiService } from '@/services/api';
 import { User as UserType } from '@/types';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
 
 export default function ProfileScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
@@ -114,6 +116,7 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Alert.alert(
       'Logout',
       'Are you sure you want to logout?',
@@ -132,26 +135,27 @@ export default function ProfileScreen() {
   };
 
   const handleEditProfile = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push('/profile/edit');
   };
 
   const handleChangePassword = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push('/profile/change-password');
   };
 
   const handleNotificationSettings = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push('/profile/notifications');
   };
 
   const handlePrivacySettings = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push('/profile/privacy');
   };
 
-  const handleAppSettings = () => {
-    router.push('/profile/settings');
-  };
-
   const handleHelp = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push('/profile/help');
   };
 
@@ -160,14 +164,17 @@ export default function ProfileScreen() {
   };
 
   const handleExportData = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push('/profile/export-data');
   };
 
   const handleDeleteAccount = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     router.push('/profile/delete-account');
   };
 
   const handleShareApp = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       await Share.share({
         message: 'Check out SplitSaathi - the best app for splitting expenses with friends! Download it now: https://splitsaathi.up.railway.app',
@@ -253,293 +260,108 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Profile</Text>
-          <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
-            <Edit3 size={20} color="#2563eb" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Profile Card */}
-        <View style={styles.profileCard}>
-          <View style={styles.avatarContainer}>
-            <Image 
-              source={{ uri: user?.picture || 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=400' }} 
-              style={styles.avatar} 
+        {/* Hero Section */}
+        <LinearGradient colors={["#6366f1", "#a5b4fc"]} style={styles.heroHeader}>
+          <View style={styles.heroContent}>
+            <Image
+              source={{ uri: user?.picture || 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=400' }}
+              style={styles.avatar}
             />
-            <TouchableOpacity style={styles.cameraButton}>
-              <Camera size={16} color="#ffffff" />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.profileInfo}>
             <Text style={styles.userName}>{user?.name || 'User Name'}</Text>
             <Text style={styles.userEmail}>{user?.email || 'user@example.com'}</Text>
-            <Text style={styles.joinDate}>Member since January 2024</Text>
           </View>
-          
-          {/* Achievement Badge */}
-          <View style={styles.achievementBadge}>
-            <Award size={16} color="#f59e0b" />
-            <Text style={styles.achievementText}>Active User</Text>
-          </View>
-        </View>
+        </LinearGradient>
 
-        {/* Enhanced Stats Section */}
+        {/* Stats Section */}
         <View style={styles.statsSection}>
-          <Text style={styles.sectionTitle}>Your Activity</Text>
-          <View style={styles.statsGrid}>
-            {renderStatsCard(
-              <Users size={20} />,
-              'Groups',
-              stats.totalGroups,
-              '#2563eb'
-            )}
-            {renderStatsCard(
-              <DollarSign size={20} />,
-              'Total Spent',
-              `$${stats.totalExpenses.toFixed(0)}`,
-              '#059669'
-            )}
-            {renderStatsCard(
-              <Receipt size={20} />,
-              'Transactions',
-              stats.totalTransactions,
-              '#ea580c'
-            )}
+          <View style={styles.statsCard}>
+            <Users size={20} color="#6366f1" />
+            <Text style={styles.statsValue}>{stats.totalGroups}</Text>
+            <Text style={styles.statsLabel}>Groups</Text>
           </View>
-          
-          <View style={styles.statsGrid}>
-            {renderStatsCard(
-              <TrendingUp size={20} />,
-              'This Month',
-              `$${stats.monthlySpending.toFixed(0)}`,
-              '#7c3aed'
-            )}
-            {renderStatsCard(
-              <Calendar size={20} />,
-              'Avg. Expense',
-              `$${stats.averageExpense.toFixed(0)}`,
-              '#dc2626'
-            )}
-            {renderStatsCard(
-              <Star size={20} />,
-              'Most Active',
-              stats.mostActiveGroup || 'None',
-              '#f59e0b'
-            )}
+          <View style={styles.statsCard}>
+            <DollarSign size={20} color="#059669" />
+            <Text style={styles.statsValue}>${stats.totalExpenses.toFixed(0)}</Text>
+            <Text style={styles.statsLabel}>Total Spent</Text>
+          </View>
+          <View style={styles.statsCard}>
+            <Receipt size={20} color="#ea580c" />
+            <Text style={styles.statsValue}>{stats.totalTransactions}</Text>
+            <Text style={styles.statsLabel}>Transactions</Text>
+          </View>
+          <View style={styles.statsCard}>
+            <Star size={20} color="#f59e0b" />
+            <Text style={styles.statsValue}>${stats.monthlySpending.toFixed(0)}</Text>
+            <Text style={styles.statsLabel}>This Month</Text>
           </View>
         </View>
 
         {/* Quick Actions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.quickActionsGrid}>
-            {renderQuickAction(
-              <Download size={20} />,
-              'Export Data',
-              'Download your expense data',
-              handleExportData,
-              '#059669'
-            )}
-            {renderQuickAction(
-              <Share2 size={20} />,
-              'Share App',
-              'Invite friends to SplitSaathi',
-              handleShareApp,
-              '#7c3aed'
-            )}
-            {renderQuickAction(
-              <Star size={20} />,
-              'Rate App',
-              'Help us improve',
-              handleRateApp,
-              '#f59e0b'
-            )}
-            {renderQuickAction(
-              <Gift size={20} />,
-              'Refer Friends',
-              'Earn rewards',
-              () => Alert.alert('Coming Soon', 'Referral program coming soon!'),
-              '#ec4899'
-            )}
-          </View>
+        <View style={styles.quickActionsSection}>
+          <TouchableOpacity style={styles.quickActionCard} onPress={handleEditProfile}>
+            <Edit3 size={20} color="#6366f1" />
+            <Text style={styles.quickActionText}>Edit Profile</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.quickActionCard} onPress={handleExportData}>
+            <Download size={20} color="#059669" />
+            <Text style={styles.quickActionText}>Export Data</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.quickActionCard} onPress={handleShareApp}>
+            <Share2 size={20} color="#7c3aed" />
+            <Text style={styles.quickActionText}>Share App</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.quickActionCard} onPress={handleHelp}>
+            <HelpCircle size={20} color="#2563eb" />
+            <Text style={styles.quickActionText}>Help & Support</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Account Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
-          <View style={styles.settingsGroup}>
-            {renderSettingItem(
-              <User size={20} color="#6b7280" />,
-              'Edit Profile',
-              'Update your personal information',
-              handleEditProfile
-            )}
-            {renderSettingItem(
-              <Mail size={20} color="#6b7280" />,
-              'Email',
-              user?.email || 'user@example.com',
-              handleEditProfile
-            )}
-            {renderSettingItem(
-              <Lock size={20} color="#6b7280" />,
-              'Change Password',
-              'Update your account password',
-              handleChangePassword
-            )}
-            {renderSettingItem(
-              <CreditCard size={20} color="#6b7280" />,
-              'Payment Methods',
-              'Manage eSewa and bank accounts',
-              () => router.push('/profile/payment-methods')
-            )}
-          </View>
-        </View>
-
-        {/* Preferences Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Preferences</Text>
-          <View style={styles.settingsGroup}>
-            {renderSettingItem(
-              <Bell size={20} color="#6b7280" />,
-              'Notifications',
-              'Push notifications and alerts',
-              handleNotificationSettings,
-              <Switch
-                value={notificationsEnabled}
-                onValueChange={setNotificationsEnabled}
-                trackColor={{ false: '#f3f4f6', true: '#bfdbfe' }}
-                thumbColor={notificationsEnabled ? '#2563eb' : '#9ca3af'}
-              />,
-              false
-            )}
-            {renderSettingItem(
-              <Moon size={20} color="#6b7280" />,
-              'Dark Mode',
-              'Switch to dark theme',
-              undefined,
-              <Switch
-                value={darkModeEnabled}
-                onValueChange={setDarkModeEnabled}
-                trackColor={{ false: '#f3f4f6', true: '#bfdbfe' }}
-                thumbColor={darkModeEnabled ? '#2563eb' : '#9ca3af'}
-              />,
-              false
-            )}
-            {renderSettingItem(
-              <Globe size={20} color="#6b7280" />,
-              'Language & Region',
-              'English (Nepal)',
-              handleAppSettings
-            )}
-            {renderSettingItem(
-              <Settings size={20} color="#6b7280" />,
-              'App Settings',
-              'Currency, date format, and more',
-              handleAppSettings
-            )}
-          </View>
-        </View>
-
-        {/* Data & Privacy */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Data & Privacy</Text>
-          <View style={styles.settingsGroup}>
-            {renderSettingItem(
-              <Shield size={20} color="#6b7280" />,
-              'Privacy Settings',
-              'Control your data and privacy',
-              handlePrivacySettings
-            )}
-            {renderSettingItem(
-              <Download size={20} color="#6b7280" />,
-              'Export Data',
-              'Download your data as CSV',
-              handleExportData
-            )}
-            {renderSettingItem(
-              <Eye size={20} color="#6b7280" />,
-              'Data Usage',
-              'See how your data is used',
-              () => Alert.alert('Data Usage', 'Your data is used only for app functionality and is never shared with third parties.')
-            )}
-          </View>
-        </View>
-
-        {/* Support Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Support</Text>
-          <View style={styles.settingsGroup}>
-            {renderSettingItem(
-              <HelpCircle size={20} color="#6b7280" />,
-              'Help & Support',
-              'Get help with SplitSaathi',
-              handleHelp
-            )}
-            {renderSettingItem(
-              <Smartphone size={20} color="#6b7280" />,
-              'Contact Us',
-              'Get in touch with our team',
-              () => Alert.alert('Contact Us', 'Email: support@splitsaathi.com\nPhone: +977-98-00000000')
-            )}
-            {renderSettingItem(
-              <Star size={20} color="#6b7280" />,
-              'Rate the App',
-              'Share your feedback',
-              handleRateApp
-            )}
-            {renderSettingItem(
-              <Share2 size={20} color="#6b7280" />,
-              'Share SplitSaathi',
-              'Invite friends to use the app',
-              handleShareApp
-            )}
-          </View>
-        </View>
-
-        {/* About Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>About</Text>
-          <View style={styles.settingsGroup}>
-            {renderSettingItem(
-              <Settings size={20} color="#6b7280" />,
-              'About SplitSaathi',
-              'Version 1.0.0',
-              handleAbout
-            )}
-            {renderSettingItem(
-              <Heart size={20} color="#6b7280" />,
-              'Made in Nepal',
-              'Built with love in Nepal 🇳🇵',
-              handleAbout
-            )}
-          </View>
+        {/* Settings */}
+        <View style={styles.settingsSection}>
+          <TouchableOpacity style={styles.settingItem} onPress={handleNotificationSettings}>
+            <Bell size={20} color="#6366f1" />
+            <Text style={styles.settingText}>Notifications</Text>
+            <Switch
+              value={notificationsEnabled}
+              onValueChange={setNotificationsEnabled}
+              trackColor={{ false: '#f3f4f6', true: '#bfdbfe' }}
+              thumbColor={notificationsEnabled ? '#6366f1' : '#9ca3af'}
+              style={{ marginLeft: 'auto' }}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.settingItem} onPress={() => setDarkModeEnabled(!darkModeEnabled)}>
+            <Moon size={20} color="#6366f1" />
+            <Text style={styles.settingText}>Dark Mode</Text>
+            <Switch
+              value={darkModeEnabled}
+              onValueChange={setDarkModeEnabled}
+              trackColor={{ false: '#f3f4f6', true: '#bfdbfe' }}
+              thumbColor={darkModeEnabled ? '#6366f1' : '#9ca3af'}
+              style={{ marginLeft: 'auto' }}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.settingItem} onPress={handlePrivacySettings}>
+            <Shield size={20} color="#6366f1" />
+            <Text style={styles.settingText}>Privacy</Text>
+            <ChevronRight size={20} color="#9ca3af" style={{ marginLeft: 'auto' }} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.settingItem} onPress={handleChangePassword}>
+            <Lock size={20} color="#6366f1" />
+            <Text style={styles.settingText}>Change Password</Text>
+            <ChevronRight size={20} color="#9ca3af" style={{ marginLeft: 'auto' }} />
+          </TouchableOpacity>
         </View>
 
         {/* Danger Zone */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Danger Zone</Text>
-          <View style={styles.settingsGroup}>
-            {renderSettingItem(
-              <Trash2 size={20} color="#dc2626" />,
-              'Delete Account',
-              'Permanently delete your account',
-              handleDeleteAccount,
-              undefined,
-              true,
-              true
-            )}
-            {renderSettingItem(
-              <LogOut size={20} color="#dc2626" />,
-              'Logout',
-              'Sign out of your account',
-              handleLogout,
-              undefined,
-              false,
-              true
-            )}
-          </View>
+        <View style={styles.dangerZoneSection}>
+          <TouchableOpacity style={styles.dangerItem} onPress={handleDeleteAccount}>
+            <Trash2 size={20} color="#dc2626" />
+            <Text style={styles.dangerText}>Delete Account</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.dangerItem} onPress={handleLogout}>
+            <LogOut size={20} color="#dc2626" />
+            <Text style={styles.dangerText}>Logout</Text>
+          </TouchableOpacity>
         </View>
 
         {/* App Version */}
@@ -571,193 +393,72 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6b7280',
   },
-  header: {
+  heroHeader: {
+    minHeight: 180,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 36,
+    paddingBottom: 24,
+  },
+  heroContent: { alignItems: 'center' },
+  avatar: { width: 80, height: 80, borderRadius: 40, marginBottom: 12, borderWidth: 2, borderColor: '#fff' },
+  userName: { fontSize: 22, fontWeight: 'bold', color: '#fff', marginBottom: 2 },
+  userEmail: { fontSize: 15, color: '#e0e7ff' },
+  statsSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  editButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#eff6ff',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  profileCard: {
-    backgroundColor: '#ffffff',
-    margin: 20,
+    marginHorizontal: 20,
+    marginTop: -32,
+    backgroundColor: '#fff',
     borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
+    padding: 18,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.06,
     shadowRadius: 8,
-    elevation: 4,
-  },
-  avatarContainer: {
-    position: 'relative',
-    marginBottom: 16,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-  },
-  cameraButton: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#2563eb',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#ffffff',
-  },
-  profileInfo: {
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  userName: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  userEmail: {
-    fontSize: 16,
-    color: '#6b7280',
-    marginBottom: 4,
-  },
-  joinDate: {
-    fontSize: 14,
-    color: '#9ca3af',
-  },
-  achievementBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fef3c7',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#fbbf24',
-  },
-  achievementText: {
-    marginLeft: 6,
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#92400e',
-  },
-  statsSection: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 12,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
-  },
-  statsCard: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
     elevation: 2,
+    zIndex: 2,
   },
-  statsIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+  statsCard: { alignItems: 'center', flex: 1 },
+  statsValue: { fontSize: 18, fontWeight: 'bold', color: '#111827', marginTop: 4 },
+  statsLabel: { fontSize: 13, color: '#6b7280', marginTop: 2 },
+  quickActionsSection: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginHorizontal: 20,
+    marginTop: 24,
     marginBottom: 8,
-  },
-  statsValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  statsLabel: {
-    fontSize: 12,
-    color: '#6b7280',
-    textAlign: 'center',
-  },
-  section: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
-  },
-  quickActionsGrid: {
-    gap: 8,
+    gap: 12,
   },
   quickActionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
+    backgroundColor: '#fff',
+    borderRadius: 14,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  quickActionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  quickActionContent: {
     flex: 1,
-  },
-  quickActionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 2,
-  },
-  quickActionSubtitle: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
-  settingsGroup: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    overflow: 'hidden',
+    margin: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.04,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 1,
+  },
+  quickActionText: { marginLeft: 12, fontSize: 15, fontWeight: '600', color: '#374151' },
+  settingsSection: {
+    marginHorizontal: 20,
+    marginTop: 24,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
   },
   settingItem: {
     flexDirection: 'row',
@@ -766,47 +467,29 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
-  settingIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f8fafc',
-    justifyContent: 'center',
+  settingText: { marginLeft: 12, fontSize: 15, color: '#374151', fontWeight: '500', flex: 1 },
+  dangerZoneSection: {
+    marginHorizontal: 20,
+    marginTop: 24,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+    marginBottom: 24,
+  },
+  dangerItem: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 12,
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
   },
-  dangerIcon: {
-    backgroundColor: '#fef2f2',
-  },
-  settingContent: {
-    flex: 1,
-  },
-  settingTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 2,
-  },
-  dangerText: {
-    color: '#dc2626',
-  },
-  settingSubtitle: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
-  versionContainer: {
-    alignItems: 'center',
-    paddingVertical: 20,
-    paddingBottom: 40,
-  },
-  versionText: {
-    fontSize: 14,
-    color: '#9ca3af',
-    marginBottom: 4,
-  },
-  versionSubtext: {
-    fontSize: 12,
-    color: '#d1d5db',
-    marginBottom: 2,
-  },
+  dangerText: { marginLeft: 12, fontSize: 15, color: '#dc2626', fontWeight: '600', flex: 1 },
+  versionContainer: { alignItems: 'center', paddingVertical: 20, paddingBottom: 40 },
+  versionText: { fontSize: 14, color: '#9ca3af', marginBottom: 4 },
+  versionSubtext: { fontSize: 12, color: '#d1d5db', marginBottom: 2 },
 });
