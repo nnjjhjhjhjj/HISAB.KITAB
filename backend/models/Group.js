@@ -29,6 +29,11 @@ const groupSchema = new mongoose.Schema({
     unique: true,
     required: true,
     default: () => uuidv4().slice(0, 8).toUpperCase() // Generates short unique code
+  },
+  emoji: {
+    type: String,
+    trim: true,
+    default: ''
   }
 }, { 
   timestamps: true 

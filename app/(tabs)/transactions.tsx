@@ -7,6 +7,7 @@ import {
   StyleSheet,
   RefreshControl,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -32,6 +33,7 @@ export default function TransactionsScreen() {
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'week' | 'month'>('all');
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -95,18 +97,17 @@ export default function TransactionsScreen() {
 
   const confirmDeleteExpense = async () => {
     if (!selectedExpense) return;
-
+    setDeleting(true);
     try {
-      // In a real app, this would call the API to delete the expense
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Remove from local state
+      await apiService.deleteExpense(selectedExpense.id);
       setAllExpenses(prev => prev.filter(e => e.id !== selectedExpense.id));
       setFilteredExpenses(prev => prev.filter(e => e.id !== selectedExpense.id));
-      
       setSelectedExpense(null);
-    } catch (error) {
-      throw new Error('Failed to delete expense');
+      setDeleteModalVisible(false);
+    } catch (error: any) {
+      alert(error.message || 'Failed to delete expense. Please try again.');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -139,42 +140,34 @@ export default function TransactionsScreen() {
 
   const renderExpenseCard = ({ item }: { item: Expense }) => (
     <View style={styles.expenseCard}>
-      <TouchableOpacity
-        style={styles.expenseContent}
-        onPress={() => router.push(`/group/${item.groupId}`)}
-        activeOpacity={0.7}
-      >
-        <View style={styles.expenseHeader}>
-          <View style={styles.expenseIcon}>
-            <DollarSign size={20} color="#2563eb" />
-          </View>
-          <View style={styles.expenseInfo}>
-            <Text style={styles.expenseDescription}>{item.description}</Text>
-            <View style={styles.expenseDetails}>
-              <View style={styles.detailItem}>
-                <User size={12} color="#6b7280" />
-                <Text style={styles.detailText}>Paid by {item.paidBy}</Text>
-              </View>
-              <View style={styles.detailItem}>
-                <Receipt size={12} color="#6b7280" />
-                <Text style={styles.detailText}>{getGroupName(item.groupId)}</Text>
-              </View>
+      <View style={styles.expenseContent}>
+        <View style={styles.expenseIcon}>
+          <User size={22} color="#2563eb" />
+        </View>
+        <View style={styles.expenseInfo}>
+          <Text style={styles.expenseDescription}>{item.description}</Text>
+          <View style={styles.expenseDetails}>
+            <View style={styles.detailItem}>
+              <User size={12} color="#6b7280" />
+              <Text style={styles.detailText}>Paid by {item.paidBy}</Text>
             </View>
-            <View style={styles.participantsRow}>
-              <Text style={styles.participantsLabel}>
-                Split between {item.participants.length} people
-              </Text>
+            <View style={styles.detailItem}>
+              <Receipt size={12} color="#6b7280" />
+              <Text style={styles.detailText}>{getGroupName(item.groupId)}</Text>
             </View>
           </View>
-          <View style={styles.expenseRight}>
-            <Text style={styles.expenseAmount}>${item.amount.toFixed(2)}</Text>
-            <Text style={styles.expenseDate}>{formatDate(item.createdAt)}</Text>
-            <Text style={styles.expenseTime}>{formatTime(item.createdAt)}</Text>
+          <View style={styles.participantsRow}>
+            <Text style={styles.participantsLabel}>
+              Split between {item.participants.length} people
+            </Text>
           </View>
         </View>
-      </TouchableOpacity>
-
-      {/* Delete Button */}
+        <View style={styles.expenseRight}>
+          <Text style={styles.expenseAmount}>${item.amount.toFixed(2)}</Text>
+          <Text style={styles.expenseDate}>{formatDate(item.createdAt)}</Text>
+          <Text style={styles.expenseTime}>{formatTime(item.createdAt)}</Text>
+        </View>
+      </View>
       <View style={styles.expenseActions}>
         <TouchableOpacity
           style={styles.deleteButton}
@@ -221,28 +214,20 @@ export default function TransactionsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <Text style={styles.title}>Transactions</Text>
-          <Text style={styles.subtitle}>All your expense history</Text>
-        </View>
-        <TouchableOpacity 
-          style={styles.addButton}
-          onPress={() => router.push('/add-expense-quick')}
-        >
-          <Plus size={20} color="#ffffff" />
-        </TouchableOpacity>
+        <Text style={styles.title}>Transactions</Text>
       </View>
 
       {/* Summary Card */}
       <View style={styles.summaryCard}>
-        <View style={styles.summaryContent}>
+        <View style={styles.summaryIconRow}>
+          <DollarSign size={28} color="#2563eb" style={{ marginRight: 8 }} />
           <Text style={styles.summaryLabel}>Total Expenses</Text>
-          <Text style={styles.summaryAmount}>${getTotalAmount().toFixed(2)}</Text>
-          <Text style={styles.summarySubtext}>
-            {filteredExpenses.length} transaction{filteredExpenses.length !== 1 ? 's' : ''}
-            {selectedFilter !== 'all' && ` in the last ${selectedFilter}`}
-          </Text>
         </View>
+        <Text style={styles.summaryAmount}>${getTotalAmount().toFixed(2)}</Text>
+        <Text style={styles.summarySubtext}>
+          {filteredExpenses.length} transaction{filteredExpenses.length !== 1 ? 's' : ''}
+          {selectedFilter !== 'all' && ` in the last ${selectedFilter}`}
+        </Text>
       </View>
 
       {/* Filter Buttons */}
@@ -286,6 +271,15 @@ export default function TransactionsScreen() {
         )}
       />
 
+      {/* Floating Action Button */}
+      <TouchableOpacity 
+        style={styles.fab}
+        onPress={() => router.push('/add-expense-quick')}
+        activeOpacity={0.8}
+      >
+        <Plus size={28} color="#fff" />
+      </TouchableOpacity>
+
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
         visible={deleteModalVisible}
@@ -295,8 +289,8 @@ export default function TransactionsScreen() {
         }}
         onConfirm={confirmDeleteExpense}
         title="Delete Transaction"
-        message={`Are you sure you want to delete "${selectedExpense?.description}"? This action cannot be undone.`}
-        confirmText="Delete Transaction"
+        message={`Are you sure you want to delete \"${selectedExpense?.description}\"? This action cannot be undone.`}
+        confirmText={deleting ? 'Deleting...' : 'Delete Transaction'}
         requiresConfirmation={false}
         isDangerous={true}
       />
@@ -311,77 +305,53 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 18,
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
-  },
-  headerContent: {
-    flex: 1,
+    elevation: 2,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: 30,
+    fontWeight: '800',
     color: '#111827',
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#6b7280',
-  },
-  addButton: {
-    backgroundColor: '#2563eb',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#2563eb',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#6b7280',
+    letterSpacing: 0.5,
   },
   summaryCard: {
     backgroundColor: '#ffffff',
-    margin: 20,
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
+    marginHorizontal: 20,
+    marginTop: 20,
+    marginBottom: 10,
+    borderRadius: 18,
+    padding: 24,
+    shadowColor: '#2563eb',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  summaryContent: {
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 6,
     alignItems: 'center',
   },
+  summaryIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
   summaryLabel: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 8,
+    fontSize: 16,
+    color: '#2563eb',
+    fontWeight: '700',
   },
   summaryAmount: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#111827',
+    fontSize: 36,
+    fontWeight: '800',
+    color: '#059669',
     marginBottom: 4,
   },
   summarySubtext: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#6b7280',
     textAlign: 'center',
   },
@@ -392,86 +362,85 @@ const styles = StyleSheet.create({
   filterButtons: {
     flexDirection: 'row',
     backgroundColor: '#f3f4f6',
-    borderRadius: 12,
+    borderRadius: 20,
     padding: 4,
   },
   filterButton: {
     flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 20,
     alignItems: 'center',
+    marginHorizontal: 2,
   },
   activeFilterButton: {
-    backgroundColor: '#ffffff',
-    shadowColor: '#000',
+    backgroundColor: '#2563eb',
+    shadowColor: '#2563eb',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.12,
     shadowRadius: 2,
     elevation: 2,
   },
   filterButtonText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
     color: '#6b7280',
   },
   activeFilterButtonText: {
-    color: '#2563eb',
+    color: '#fff',
   },
   transactionsList: {
     flex: 1,
   },
   transactionsContent: {
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: 80,
   },
   expenseCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    marginBottom: 16,
+    shadowColor: '#2563eb',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
     borderWidth: 1,
-    borderColor: '#f3f4f6',
+    borderColor: '#e0e7ef',
   },
   expenseContent: {
-    padding: 16,
-  },
-  expenseHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    padding: 18,
   },
   expenseIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#eff6ff',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 14,
   },
   expenseInfo: {
     flex: 1,
-    marginRight: 12,
+    marginRight: 10,
   },
   expenseDescription: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
     color: '#111827',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   expenseDetails: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   detailItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 14,
     marginBottom: 2,
   },
   detailText: {
@@ -488,9 +457,10 @@ const styles = StyleSheet.create({
   },
   expenseRight: {
     alignItems: 'flex-end',
+    minWidth: 80,
   },
   expenseAmount: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '700',
     color: '#059669',
     marginBottom: 2,
@@ -505,7 +475,7 @@ const styles = StyleSheet.create({
     color: '#9ca3af',
   },
   expenseActions: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
     paddingBottom: 12,
     borderTopWidth: 1,
     borderTopColor: '#f3f4f6',
@@ -515,17 +485,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fef2f2',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#fecaca',
   },
   deleteButtonText: {
     marginLeft: 4,
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
     color: '#dc2626',
+  },
+  fab: {
+    position: 'absolute',
+    right: 24,
+    bottom: 32,
+    backgroundColor: '#2563eb',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#2563eb',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 10,
   },
   emptyContainer: {
     alignItems: 'center',
@@ -561,5 +548,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#2563eb',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#6b7280',
   },
 });
