@@ -213,7 +213,13 @@ exports.deleteGroup = async (req, res) => {
 // Get all groups for the authenticated user
 exports.getGroups = async (req, res) => {
   try {
-    const groups = await Group.find({ createdBy: req.user._id }).sort({ createdAt: -1 });
+    // Find groups where user is either creator or member
+    const groups = await Group.find({
+      $or: [
+        { createdBy: req.user._id },
+        { members: req.user.name }
+      ]
+    }).sort({ createdAt: -1 });
 
     // Calculate expenses and balances for each group
     const groupsWithStats = await Promise.all(
@@ -298,8 +304,11 @@ exports.getGroupById = async (req, res) => {
       return res.status(404).json({ message: 'Group not found' });
     }
 
-    // Check if user has access to this group
-    if (group.createdBy.toString() !== req.user._id.toString()) {
+    // Check if user has access to this group (either creator or member)
+    const hasAccess = group.createdBy.toString() === req.user._id.toString() || 
+                     group.members.includes(req.user.name);
+
+    if (!hasAccess) {
       return res.status(403).json({ message: 'Not authorized to access this group' });
     }
 

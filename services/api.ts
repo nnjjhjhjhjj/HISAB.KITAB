@@ -215,6 +215,13 @@ export const apiService = {
       return response.data.data || response.data;
     } catch (error) {
       console.error('Group API call failed:', error);
+      // Return null instead of throwing to handle gracefully
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as any;
+        if (axiosError.response?.status === 404) {
+          return null;
+        }
+      }
       throw error;
     }
   },
